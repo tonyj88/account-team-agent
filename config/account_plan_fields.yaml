@@ -8,7 +8,7 @@
 #   key       stable id used in AccountFact.field_key / row tables
 #   label     the label as printed in the template
 #   source    where the value comes from:
-#               crm        Salesforce report export (Phase G1; `human` until then)
+#               crm        Salesforce via C1 MCP snapshot (Phase G0/G1; exports are the fallback)
 #               zendesk    Zendesk ticket export (Phase G1)
 #               zoominfo   ZoomInfo contact/company export (Phase G1)
 #               copilot_draft  cell read from a Copilot-filled copy of this template
@@ -53,8 +53,8 @@ sections:
       - {key: snapshot.segment_geo, label: "Segment / Geo", source: crm, alt_sources: [zoominfo], approval: auto}
       - {key: snapshot.industry, label: "Industry", source: crm, alt_sources: [zoominfo], approval: auto}
       - {key: snapshot.fiscal_year, label: "Fiscal Year", source: crm, approval: auto}
-      - {key: snapshot.current_arr, label: "Current ARR", source: crm, approval: auto}
-      - {key: snapshot.renewal_dates, label: "Renewal Date(s)", source: crm, approval: auto}
+      - {key: snapshot.current_arr, label: "Current ARR", source: derived, approval: needs_approval, derived_from: [crm.contract.total_value, crm.contract.term_months], note: "Salesforce has no ARR field; Amount is TCV. Annualize active contract(s) in code; needs approval until leadership confirms the ARR definition."}
+      - {key: snapshot.renewal_dates, label: "Renewal Date(s)", source: crm, approval: auto, note: "Active contract end date; cross-check open renewal opportunity; mismatch => needs_approval."}
       - {key: snapshot.health_rag, label: "Health (R/A/G)", source: llm_draft, approval: needs_approval}
       - {key: snapshot.target_arr_fy, label: "Target ARR (FY)", source: human, approval: auto}
       - {key: snapshot.growth_gap_usd, label: "Growth $ Gap", source: derived, approval: auto, derived_from: [snapshot.target_arr_fy, snapshot.current_arr]}

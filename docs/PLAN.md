@@ -117,53 +117,46 @@ sections are rendered blank until later phases.
 - `atb plan due` lists plans due for refresh (ARR ≥ $150k quarterly, else semiannual) and
   plans with a trigger event in the last 5 business days.
 
-**Phase G — Structured exports + Copilot draft reconciliation (unblocked 2026-09-28)**
-Tony has normal access to Salesforce, Zendesk and ZoomInfo (via ConductorOne) and can
-export lists from each. ConductorOne itself is access management, not a data source —
-it's the formal route if a read permission is ever missing. Goal: fewest manual steps.
+**Phase G — Structured data via C1-governed MCP (Salesforce proven 2026-09-28)**
+Result of `docs/C1_ACCESS_TEST.md`: Claude Code on the laptop, connected to C1's MCP
+URL, answered owner / contract / renewal for a real account from live Salesforce.
+Findings that shape the design:
+- **No ARR field in Salesforce.** Opportunity `Amount` is total contract value; ARR has
+  to be *derived* (e.g. active contract TCV ÷ term in years). The rule is deterministic
+  Python, shown in the evidence file, and `current_arr` stays `needs_approval` until
+  leadership confirms the ARR definition.
+- Renewal date comes from the **active contract end date**, cross-checked against the
+  open renewal opportunity; disagreement ⇒ `needs_approval`.
+- Records have stable IDs (contract number, opportunity) ⇒ provenance cites the
+  Salesforce record + field, which is stronger than a quote.
 
-- **G0 — Live pull via C1-governed MCP (if available; check first, replaces manual exports)**:
-  C1 can govern AI-agent access to MCP servers (Salesforce is named as an example) for
-  Claude Code, Claude Desktop, Cursor and Copilot Studio — per-user, short-lived tokens,
-  no stored API keys (docs: c1.ai/docs/product/how-to/connect-mcp-client, ai-tools).
-  Claude Code support is experimental (`CLAUDE_CODE_ENABLE_XAA=1`). If Tony's C1 admin
-  has registered Salesforce / Zendesk / ZoomInfo MCP servers and grants access, a
-  Claude Code session on the laptop pulls each account's data and **saves the response
-  as a snapshot file into `data/drop/exports/`** — so G1's ingest, provenance (cite the
-  snapshot row) and supersession work unchanged, and the Python bot never holds
-  Salesforce credentials. Exports stay the fallback. Test runbook: `docs/C1_ACCESS_TEST.md`.
-- **G1 — Export connectors** (`ingest/exports/`): one drop folder
-  `data/drop/exports/` for CSV/XLSX. Each file is auto-detected by header signature,
-  mapped via `config/export_mappings.yaml` (column → field key, so a changed report
-  layout is a config edit), and resolved to accounts by account name / domain column.
-  - Salesforce report → Snapshot (owners, segment, industry, FY, ARR, renewal),
-    products/licences (Section 3), opportunities (Section 9). `source=crm`.
-  - Zendesk ticket export → open tickets / ERs (Section 3), escalations as Risks
-    (Section 10), security-incident trigger. `source=zendesk`.
-  - ZoomInfo contact/company export → titles, reporting lines and seniority for
-    Stakeholders (5) and Org chart tiers (6); industry/size/funding; exec-change and
-    funding triggers. `source=zoominfo`; roles and tiers still `needs_approval`.
-  - Provenance: the export file is stored as a Document; each fact cites its row (the
-    row's text is the verbatim quote), so the evidence file works unchanged.
-  - Re-dropping a newer export supersedes older values (same lifecycle rule).
-- **G2 — Copilot draft import + reconciliation**: Tony has M365 Copilot (with its
-  Salesforce integration) fill a copy of the template; he drops the .docx into
-  `data/drop/copilot/`. The bot reads it with the same table locator as Phase E
-  (read instead of write) and stores each cell as `source=copilot_draft`, always
-  `needs_approval` (no citations). `atb plan reconcile --account X` produces a report:
-  agrees with evidence / conflicts with evidence / Copilot-only (no evidence) / bot-only.
-  Tony approves from that report. This is the "Copilot fills it, then it gets reviewed"
-  loop — the review runs locally through the company gateway, so filled plans never
-  leave the laptop.
-- **G3 — Fewer manual steps (after G1 works)**: check whether each app can schedule
-  a saved report/list to email. If yes, send them to the dedicated mailbox and enable the
-  IMAP connector (already stubbed in `config.py`) — exports then arrive hands-free.
-  Single command `atb refresh` = ingest → extract → render for all due plans.
-- **G4 — Screenshots (last resort)**: PNG in the drop folder → Claude vision extraction
-  → values always `needs_approval`, citing the image.
+Architecture — **Claude Code fetches, Python decides:**
+- **G0 — Fetcher (Claude Code skill, no Python LLM calls):** a project skill
+  `.claude/skills/pull-account/` (`/pull-account <account>`) that uses the C1 MCP tools
+  to read Salesforce (account, owners, active contracts, opportunities, products/assets)
+  and — once confirmed available — Zendesk and ZoomInfo, then writes **one JSON snapshot
+  per account per source** to `data/drop/crm/<source>/<account>_<timestamp>.json` in a
+  fixed schema (`config/snapshot_schema.json`): raw field values + record IDs + pulled_at.
+  The skill does **no** interpretation (no ARR math, no judgement) — it only copies
+  fields. Runs on the company gateway model (Sonnet 5 is enough). A variant pulls every
+  account Tony owns (`/pull-account --mine`).
+- **G1 — Snapshot ingest (Python, deterministic):** `ingest/crm_snapshot.py` validates
+  the JSON against the schema, stores it as a Document (redacted like any input), and
+  writes `AccountFact`s / opportunity rows with `source=crm` (or `zendesk`, `zoominfo`),
+  citing record ID + field. Derived fields (ARR, growth gap, renewal-in-final-two-
+  quarters trigger) are computed here by code. Newer snapshots supersede older ones.
+- **G2 — Copilot draft import + reconciliation** (unchanged, lower priority now): read a
+  Copilot-filled template, store cells as `copilot_draft` (always `needs_approval`),
+  `atb plan reconcile` against evidence.
+- **Fallbacks:** CSV/XLSX exports into `data/drop/exports/` mapped by
+  `config/export_mappings.yaml` into the **same snapshot schema** (only if MCP access is
+  lost or a source isn't exposed via C1); screenshots last.
+- Later: the Python bot could call C1's MCP URL itself for unattended refresh, but that
+  needs a stored OAuth token — only after the Claude Code fetcher proves out and IT is OK
+  with it.
 
 **Phase I — Remaining sections**
-- 3 Where we are today, 7 Competition, 8 Partners, 9 Opportunities (needs G1), then
+- 3 Where we are today, 7 Competition, 8 Partners, 9 Opportunities (needs G0/G1), then
   2 Strategy, 6 Org chart, 12 The Ask as `llm_draft` values that always need approval.
 - Meeting linking (`resolve/meeting_link.py`: account + date + attendee overlap) — lets
   the evidence file show when two sources disagree about the same meeting.
@@ -174,7 +167,9 @@ it's the formal route if a read permission is ever missing. Goal: fewest manual 
 
 **Phase H — Team distribution (GATED: IT answer)**
 - C1 also documents connecting **Copilot Studio** to C1-governed tools and publishing
-  that agent to M365 Copilot — one possible Phase H route that reuses the same access.
+  that agent to M365 Copilot. Since C1 access is per user, each teammate would pull only
+  what they're entitled to — the team-access problem gets simpler. Strong Phase H
+  candidate.
 - Research with IT which M365 Copilot agent type is allowed: declarative agent over
   SharePoint (just publish Phase D/E files) vs. API plugin (needs hosted Phase J API + auth).
 - Shared intake (email-forward IMAP connector already stubbed in `config.py`) once teammates

@@ -113,9 +113,9 @@ Don't commit any of these secrets or paste them into chat.
 | Step | Result (✅/❌) | Error message / notes |
 |---|---|---|
 | A1 AI connections visible | ✅ | 2026-09-28: "Connect AI assistants to C1" section shows an MCP server URL (copy it from the C1 UI; not stored in the repo) |
-| A2 Claude Code can add URL | | |
-| A3 Sign-in works | | |
-| A4 Tools present (which?) | | |
-| A5 Toolsets requestable | | |
-| A6 Read-only lookup works | | |
+| A2 Claude Code can add URL | ✅ | |
+| A3 Sign-in works | ✅ | |
+| A4 Tools present (which?) | ✅ Salesforce | Zendesk / ZoomInfo not yet checked; record tool names |
+| A5 Toolsets requestable | n/a | Salesforce already granted |
+| A6 Read-only lookup works | ✅ | 2026-09-28: owner, active contract, renewal returned (7 tool calls). No ARR field — Amount is TCV |
 | B (if used) | | |

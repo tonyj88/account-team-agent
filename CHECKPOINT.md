@@ -46,7 +46,11 @@ tasks written by the Sonnet 5 main session; they still end with `atb-phase-revie
    model and MEDDPICC-focused extraction from `docs/ACCOUNT_PLAN_MAPPING.md` and
    `config/account_plan_fields.yaml`. Phase B's dates feed Phase C/F (staleness, review
    cadence), so do B first. Design `AccountFact.source` to include `zendesk`,
-   `zoominfo` and `copilot_draft` (Phase G) from the start.
+   `zoominfo` and `copilot_draft` (Phase G) from the start, and let facts cite a
+   structured record (source record ID + field) as well as a text span.
+6. After Phase C: Phase G (C1/Salesforce snapshots) **before** D, so the first rendered
+   plan already has a real Snapshot section. G0 skill design → `atb-architect`
+   (claude-opus-5); build → `atb-implementer` (claude-sonnet-5).
 
 Phase B's final check needs a live run on Tony's laptop (gateway + real data): before/after
 `atb ask` showing a resolved action item is no longer reported as owed.
@@ -54,17 +58,11 @@ Phase B's final check needs a live run on Tony's laptop (gateway + real data): b
 **Waiting on Tony**
 - Put the blank Account Plan template at `data/templates/account_plan.docx` on the laptop
   (gitignored — it's Confidential; only its field list is in the repo).
-- **Run `docs/C1_ACCESS_TEST.md` on the laptop (Phase G0):** step-by-step check whether
-  Claude Code can read Salesforce/Zendesk/ZoomInfo through C1; each failed step names
-  the exact ask for the C1 admin or IT. Paste the results table (no customer data) here.
-- **Sample exports for Phase G1:** one blank-ish/redacted example of each — Salesforce
-  account/opportunity report, Zendesk ticket list, ZoomInfo contact list — so the
-  architect can write `config/export_mappings.yaml`. Headers only is enough; keep real
-  rows on the laptop.
-- **Copilot draft:** have Copilot + Salesforce fill a copy of the template for one
-  account and keep it in `data/drop/copilot/` — the test case for Phase G2.
-- Check whether Salesforce / Zendesk / ZoomInfo can schedule a saved report to email
-  (Phase G3, hands-free intake).
+- **C1 follow-ups (Salesforce via C1 works ✅ 2026-09-28):**
+  - In `/mcp` → `c1`, list the tool names (names only) and check whether Zendesk and
+    ZoomInfo tools exist; if not, request those toolsets in C1 → Requests.
+  - Confirm with leadership how ARR should be calculated (Salesforce Amount is TCV).
+- Copilot-filled template for one account (Phase G2 test case) — lower priority now.
 - Approve the cost of re-extracting all notes once the Phase C prompt is ready.
 - **IT answer** on M365 Copilot agents → Phase H, or the Cloudflare fallback (plus: is
   customer data allowed on Cloudflare, on whose account?).
@@ -94,7 +92,7 @@ Models: **O5** = claude-opus-5, **S5** = claude-sonnet-5. "impl → rev" always 
 | D | `atb plan render` markdown preview, `plan review/approve/set` CLI, separate evidence file | main session (S5) | impl → rev (S5) | C | ⬜ |
 | E | Fill the real .docx template + evidence file; plan version history | architect (O5) | impl → rev (S5) | D | ⬜ |
 | F | Trigger-event detection + `atb plan due` (review cadence) | main session (S5) | impl → rev (S5) | C | ⬜ |
-| G | Structured sources: G1 Salesforce/Zendesk/ZoomInfo export connectors; G2 Copilot-draft import + reconciliation; G3 scheduled email exports; G4 screenshots | architect (O5) | impl → rev (S5) | G1: C + sample export headers; G2: E | ⬜ |
+| G | Structured data via C1 MCP: G0 `/pull-account` Claude Code skill → JSON snapshots; G1 deterministic snapshot ingest (ARR derived in code); G2 Copilot-draft reconcile; exports as fallback | architect (O5) | impl → rev (S5) | G0: none (do after C); G1: C | ⬜ after C |
 | I | Remaining sections (3, 7, 8, 9, then 2, 6, 12 as drafts) + meeting linking | architect (**O5 required**, prompt work) | impl → rev (S5) | E (+ G1 for 3, 6, 9) | ⬜ |
 | J | Service layer + local FastAPI web app | architect (O5) | impl → rev (S5) | E | ⬜ |
 | H | Team distribution via M365 Copilot agent | architect (O5) | — | IT answer | ⏸ waiting |
