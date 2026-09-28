@@ -60,12 +60,13 @@ Phase B's final check needs a live run on Tony's laptop (gateway + real data): b
   (gitignored — it's Confidential; only its field list is in the repo).
 - **C1 follow-ups (Salesforce via C1 works ✅ 2026-09-28):**
   - Discovery done: Salesforce (28 read tools) and ZoomInfo (4) reachable; Zendesk not
-    connected and not needed. Still to check: do **customer support cases** live in
-    Salesforce `Case`? And are existing account plans stored in Salesforce Notes &
-    Attachments (so the bot can start from the last plan)?
+    connected and not needed. Customer support cases are in Salesforce
+    `Case` (confirmed). No account plans exist yet — all are new.
   - Never approve a C1 `execute` call that writes; until the G0 guardrail hook exists,
     review each `execute` prompt.
   - Confirm with leadership how ARR should be calculated (Salesforce Amount is TCV).
+  - Confirm with leadership where finished plans are stored (template says Salesforce
+    Account → Notes & Attachments) — needed before the first upload, not before building.
 - Copilot-filled template for one account (Phase G2 test case) — lower priority now.
 - Approve the cost of re-extracting all notes once the Phase C prompt is ready.
 - **IT answer** on M365 Copilot agents → Phase H, or the Cloudflare fallback (plus: is

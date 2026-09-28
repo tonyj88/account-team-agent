@@ -82,7 +82,7 @@ sections:
     title: "Where We Are Today"
     mvp: false
     fields:
-      - {key: today.what_they_buy, label: "What they buy from us today", source: crm, alt_sources: [note], approval: auto, note: "Salesforce Asset + Contract + OpportunityLineItem for products/licences/seats; Salesforce Case for support tickets/ERs (if customer cases live there — verify); notes add adoption signals"}
+      - {key: today.what_they_buy, label: "What they buy from us today", source: crm, alt_sources: [note], approval: auto, note: "Salesforce Asset + Contract + OpportunityLineItem for products/licences/seats; Salesforce Case for support tickets/ERs (confirmed); notes add adoption signals"}
       - {key: today.their_business, label: "What we know about their business", source: note, approval: auto}
       - {key: today.other_vendors, label: "Who else do they buy from?", source: note, approval: auto}
       - {key: today.why_bought_us, label: "Why did they buy us originally, and is that reason still true?", source: llm_draft, approval: needs_approval}

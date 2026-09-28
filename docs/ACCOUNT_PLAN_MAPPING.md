@@ -28,14 +28,14 @@ list is `config/account_plan_fields.yaml`.
 | — | Header: Exec Sponsor, Status R/A/G | notes / draft | partial | Status always needs approval |
 | 1 | Snapshot | Salesforce via C1 (industry/segment also ZoomInfo); dates by bot | high (Salesforce proven) | Target ARR, Reviewed With = human; Health R/A/G = draft; Growth gap and Next Review are computed |
 | 2 | Account Strategy | CRM "today"; human future | low | Thesis + must-win plays are drafts |
-| 3 | Where We Are Today | Salesforce assets/contracts/products (+ Cases, if customer support lives there) + notes | medium | Usage/telemetry still has no source |
+| 3 | Where We Are Today | Salesforce assets/contracts/products + Salesforce Cases (customer support, confirmed) + notes | medium | Usage/telemetry still has no source |
 | 4 | MEDDPICC | notes | **high** | Evidence = cited quotes; R/A/G = draft |
 | 5 | Stakeholder Map | notes + Salesforce Contacts / Opportunity Contact Roles + ZoomInfo titles; last/next touch from Salesforce Tasks/Events | high | Needs contact merge; MEDDPICC role + position need approval |
 | 6 | Org Chart & Coverage | ZoomInfo reporting lines + human | medium | Tiers/codes need approval; bot lists Tier 1/2 gaps ("?" = open risk) |
 | 7 | Competition | notes; drafts | medium | Who/footprint extracted; counter-position + trap question drafted |
 | 8 | Channel & Partners | notes | medium | Influence + alignment need approval |
 | 9 | Opportunities | Salesforce via C1 + notes | high (Salesforce proven) | Next action from action items |
-| 10 | Risks & Blockers | notes (+ escalated Salesforce Cases) | high | Extraction adds mitigation, owner, by-when |
+| 10 | Risks & Blockers | notes + escalated Salesforce Cases | high | Extraction adds mitigation, owner, by-when |
 | 11 | 30/60/90 Actions | notes | high | Bucketed by due date; flag Section 4 ambers with no 30-day action |
 | 12 | The Ask | human / draft | low | |
 | App. | Refresh cadence + trigger events | ARR + notes | high | ≥$150k quarterly, else semiannual; trigger ⇒ update within 5 business days |
@@ -45,5 +45,8 @@ list is `config/account_plan_fields.yaml`.
   visibly marked.
 - `data/plans/<account>_<date>_evidence.md`: per field/row, the source document, date,
   and verbatim quote.
-- Uploading to Salesforce (Notes & Attachments) stays manual. Salesforce write is
-  deprioritized.
+- **No account plans exist yet** — every plan starts from scratch; the bot's last approved
+  version (kept in the local DB) is the baseline for later refreshes.
+- **Where finished plans are stored is leadership's call.** The template says Salesforce
+  Account → Notes & Attachments; confirm before the first upload. Uploading stays manual
+  (the C1 tools granted are read-only, and Salesforce write is deprioritized).

@@ -114,8 +114,10 @@ sections are rendered blank until later phases.
 - Extraction flags trigger events from the template appendix: champion/EB leaves or
   changes role; reorg/acquisition/funding; earnings miss/budget or hiring freeze;
   competitor foothold; security incident/audit finding; renewal in final two quarters.
-- `atb plan due` lists plans due for refresh (ARR ≥ $150k quarterly, else semiannual) and
-  plans with a trigger event in the last 5 business days.
+- `atb plan due` lists plans due for refresh (ARR ≥ $150k quarterly, else semiannual),
+  plans with a trigger event in the last 5 business days, and **accounts with no plan
+  yet** — ranked (highest ARR, nearest renewal first) to pace the "4+ new plans per week"
+  target. No plans exist today, so initially this is the creation queue.
 
 **Phase G — Structured data via C1-governed MCP (Salesforce proven 2026-09-28)**
 Result of `docs/C1_ACCESS_TEST.md`: Claude Code on the laptop, connected to C1's MCP
@@ -153,8 +155,8 @@ Salesforce object → template section:
 | Asset, Order/OrderItem, Product2 | 3 What they buy (products, licences, seats) |
 | Contact, OpportunityContactRole | 5 Stakeholders (names, titles, recorded roles) |
 | Task, Event | 5 "next touch" / coverage; activity recency for health |
-| Case | 3 support tickets/ERs, 10 risks — **verify** customer cases live here |
-| Note, ContentDocument | extra notes source; and **existing account plans** stored under Notes & Attachments — the previous plan becomes the baseline for the next refresh |
+| Case | 3 support tickets/ERs, 10 risks (escalations), security-incident trigger — **confirmed**: customer support cases live here |
+| Note, ContentDocument | extra notes source. **No account plans exist yet** (confirmed) — first plans are created from scratch; after that, the bot's own last approved plan (local DB) is the baseline for refreshes |
 ZoomInfo: contacts (titles, seniority, reporting lines) → 5 and 6; company (industry,
 size, funding) → 1 and trigger events. `enrich_*` calls may consume ZoomInfo credits —
 prefer `list_*`; enrich only with Tony's OK.
