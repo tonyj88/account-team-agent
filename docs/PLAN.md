@@ -137,20 +137,44 @@ included), read-only helpers (`find_api_objects`, `count_api_objects`,
 `get_execution`, `list_guides`/`load_guide`), and a virtual file store
 (`create_vfs*`, `list_vfs_files`, `get_vfs_download_url`) that may suit bulk pulls.
 
+**What's reachable (discovery 2026-09-28):** Salesforce — 28 read tools (`get_*` for
+Account, Contact, Contract, Opportunity, OpportunityContactRole, OpportunityLineItem,
+Asset, Case, Task, Event, Note, ContentDocument/Version, Order, Product2, User, …, plus
+`salesforce_soql_query*`); a `salesforce/quirks` guide for SOQL patterns (the skill
+loads it first). ZoomInfo — `list_companies`, `list_contacts`, `enrich_company`,
+`enrich_contact`. **Zendesk: not connected, and not needed** (internal IT tickets only).
+
+Salesforce object → template section:
+| Object | Feeds |
+|---|---|
+| Account, User | 1 Snapshot: owners, segment/geo, industry |
+| Contract | 1 renewal date + ARR derivation; renewal trigger |
+| Opportunity, OpportunityLineItem | 9 Opportunities; 3 products; 2 "today" spend |
+| Asset, Order/OrderItem, Product2 | 3 What they buy (products, licences, seats) |
+| Contact, OpportunityContactRole | 5 Stakeholders (names, titles, recorded roles) |
+| Task, Event | 5 "next touch" / coverage; activity recency for health |
+| Case | 3 support tickets/ERs, 10 risks — **verify** customer cases live here |
+| Note, ContentDocument | extra notes source; and **existing account plans** stored under Notes & Attachments — the previous plan becomes the baseline for the next refresh |
+ZoomInfo: contacts (titles, seniority, reporting lines) → 5 and 6; company (industry,
+size, funding) → 1 and trigger events. `enrich_*` calls may consume ZoomInfo credits —
+prefer `list_*`; enrich only with Tony's OK.
+
 **Write-safety guardrail (required before G0 ships):** the bot must never change
-Salesforce/Zendesk/ZoomInfo.
+Salesforce or ZoomInfo.
 - `.claude/settings.json`: allow the read-only C1 tools; leave `execute` on "ask" (never
   auto-approved).
-- A `PreToolUse` hook on the C1 `execute` tool that inspects the requested operation and
-  **blocks anything that isn't a read** (SOQL `SELECT`, get/list/search). Deterministic
-  code, not a prompt instruction.
+- A `PreToolUse` hook on the C1 `execute` tool with an **allowlist** of app tools:
+  `salesforce_get_*`, `salesforce_soql_query*` (SELECT only), `zoominfo_list_*`;
+  `zoominfo_enrich_*` → ask. Anything else is blocked. Today every granted tool is a
+  read, but the allowlist protects against writes granted later. Deterministic code,
+  not a prompt instruction.
 - The skill's instructions also say read-only, as a second layer.
 
 Architecture — **Claude Code fetches, Python decides:**
 - **G0 — Fetcher (Claude Code skill, no Python LLM calls):** a project skill
   `.claude/skills/pull-account/` (`/pull-account <account>`) that uses the C1 MCP tools
   to read Salesforce (account, owners, active contracts, opportunities, products/assets)
-  and — once confirmed available — Zendesk and ZoomInfo, then writes **one JSON snapshot
+  and ZoomInfo, then writes **one JSON snapshot
   per account per source** to `data/drop/crm/<source>/<account>_<timestamp>.json` in a
   fixed schema (`config/snapshot_schema.json`): raw field values + record IDs + pulled_at.
   The skill does **no** interpretation (no ARR math, no judgement) — it only copies
@@ -158,7 +182,7 @@ Architecture — **Claude Code fetches, Python decides:**
   account Tony owns (`/pull-account --mine`).
 - **G1 — Snapshot ingest (Python, deterministic):** `ingest/crm_snapshot.py` validates
   the JSON against the schema, stores it as a Document (redacted like any input), and
-  writes `AccountFact`s / opportunity rows with `source=crm` (or `zendesk`, `zoominfo`),
+  writes `AccountFact`s / opportunity rows with `source=crm` (or `zoominfo`),
   citing record ID + field. Derived fields (ARR, growth gap, renewal-in-final-two-
   quarters trigger) are computed here by code. Newer snapshots supersede older ones.
 - **G2 — Copilot draft import + reconciliation** (unchanged, lower priority now): read a

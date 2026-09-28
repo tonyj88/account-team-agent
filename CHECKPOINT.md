@@ -45,7 +45,7 @@ tasks written by the Sonnet 5 main session; they still end with `atb-phase-revie
 5. Then Phase C → `atb-architect` (**claude-opus-5**, required): design the plan data
    model and MEDDPICC-focused extraction from `docs/ACCOUNT_PLAN_MAPPING.md` and
    `config/account_plan_fields.yaml`. Phase B's dates feed Phase C/F (staleness, review
-   cadence), so do B first. Design `AccountFact.source` to include `zendesk`,
+   cadence), so do B first. Design `AccountFact.source` to include
    `zoominfo` and `copilot_draft` (Phase G) from the start, and let facts cite a
    structured record (source record ID + field) as well as a text span.
 6. After Phase C: Phase G (C1/Salesforce snapshots) **before** D, so the first rendered
@@ -59,8 +59,10 @@ Phase B's final check needs a live run on Tony's laptop (gateway + real data): b
 - Put the blank Account Plan template at `data/templates/account_plan.docx` on the laptop
   (gitignored — it's Confidential; only its field list is in the repo).
 - **C1 follow-ups (Salesforce via C1 works ✅ 2026-09-28):**
-  - Run step **A7** in `docs/C1_ACCESS_TEST.md` (discovery via `search_tools`) to see
-    whether Zendesk and ZoomInfo are reachable; if not, the step gives the admin ask.
+  - Discovery done: Salesforce (28 read tools) and ZoomInfo (4) reachable; Zendesk not
+    connected and not needed. Still to check: do **customer support cases** live in
+    Salesforce `Case`? And are existing account plans stored in Salesforce Notes &
+    Attachments (so the bot can start from the last plan)?
   - Never approve a C1 `execute` call that writes; until the G0 guardrail hook exists,
     review each `execute` prompt.
   - Confirm with leadership how ARR should be calculated (Salesforce Amount is TCV).

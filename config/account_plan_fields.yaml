@@ -9,7 +9,6 @@
 #   label     the label as printed in the template
 #   source    where the value comes from:
 #               crm        Salesforce via C1 MCP snapshot (Phase G0/G1; exports are the fallback)
-#               zendesk    Zendesk ticket export (Phase G1)
 #               zoominfo   ZoomInfo contact/company export (Phase G1)
 #               copilot_draft  cell read from a Copilot-filled copy of this template
 #                          (Phase G2); never cited, ALWAYS needs approval, any field
@@ -83,7 +82,7 @@ sections:
     title: "Where We Are Today"
     mvp: false
     fields:
-      - {key: today.what_they_buy, label: "What they buy from us today", source: crm, alt_sources: [zendesk, note], approval: auto, note: "products, license model, seats, use cases, adoption, support tickets/ERs; notes add adoption signals"}
+      - {key: today.what_they_buy, label: "What they buy from us today", source: crm, alt_sources: [note], approval: auto, note: "Salesforce Asset + Contract + OpportunityLineItem for products/licences/seats; Salesforce Case for support tickets/ERs (if customer cases live there — verify); notes add adoption signals"}
       - {key: today.their_business, label: "What we know about their business", source: note, approval: auto}
       - {key: today.other_vendors, label: "Who else do they buy from?", source: note, approval: auto}
       - {key: today.why_bought_us, label: "Why did they buy us originally, and is that reason still true?", source: llm_draft, approval: needs_approval}
@@ -176,7 +175,7 @@ sections:
     mvp: true
     kind: rows
     columns:
-      - {key: risk, label: "Risk / blocker", source: note, alt_sources: [zendesk], approval: auto, note: "commercial, technical, political, competitive, timing, or internal"}
+      - {key: risk, label: "Risk / blocker", source: note, alt_sources: [crm], approval: auto, note: "Salesforce escalated Cases can seed risks. commercial, technical, political, competitive, timing, or internal"}
       - {key: mitigation, label: "Mitigation", source: note, approval: auto}
       - {key: owner, label: "Owner", source: note, approval: auto}
       - {key: by_when, label: "By when", source: note, approval: auto}
@@ -212,5 +211,5 @@ trigger_events:
   - {key: corporate_event, label: "Reorganisation, acquisition, divestment or funding event", source: note, alt_sources: [zoominfo]}
   - {key: financial_freeze, label: "Earnings miss, budget freeze or hiring freeze", source: note}
   - {key: competitor_beachhead, label: "Competitor lands a beachhead anywhere in the account", source: note}
-  - {key: security_incident, label: "Security incident, breach or audit finding in our domain", source: note, alt_sources: [zendesk]}
+  - {key: security_incident, label: "Security incident, breach or audit finding in our domain", source: note, alt_sources: [crm]}
   - {key: renewal_final_two_quarters, label: "Renewal enters its final two quarters", source: derived}

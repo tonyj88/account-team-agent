@@ -1,4 +1,4 @@
-# C1 → Salesforce/Zendesk/ZoomInfo access test (Phase G0)
+# C1 → Salesforce/ZoomInfo access test (Phase G0)
 
 Goal: find out whether Claude Code on Tony's laptop can read Salesforce, Zendesk and
 ZoomInfo through C1-governed MCP access, and if not, get a **specific** ask for the C1
@@ -135,5 +135,5 @@ delete.
 | A4 Tools present (which?) | ✅ | Meta-tools: search_tools, execute (destructive), find_api_objects, count_api_objects, get_execution, list/load_guide, vfs tools. App tools are found via search_tools (A7) |
 | A5 Toolsets requestable | n/a | Salesforce already granted |
 | A6 Read-only lookup works | ✅ | 2026-09-28: owner, active contract, renewal returned (7 tool calls). No ARR field — Amount is TCV |
-| A7 Zendesk / ZoomInfo tools found | | |
+| A7 App tools found | ✅ | Salesforce: 28 read tools + `salesforce/quirks` guide. ZoomInfo: 4 (list/enrich company, contact). Zendesk: not connected — not needed (internal IT only) |
 | B (if used) | | |
