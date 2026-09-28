@@ -108,6 +108,23 @@ Don't commit any of these secrets or paste them into chat.
 - **Allowed data use:** confirm with your manager/IT that pulling CRM data into a local
   tool is allowed (it stays on the laptop; redaction runs at ingest).
 
+## A7 — Which apps can C1 reach? (discovery, read-only)
+
+C1 shows a small set of meta-tools (`search_tools`, `execute`, `find_api_objects`,
+`list_guides`, …), not one tool per app. Ask Claude Code:
+
+> Using the c1 MCP server, call `list_guides`, then `search_tools` for "salesforce",
+> "zendesk" and "zoominfo". Show only the tool names and descriptions you find, and
+> whether each is read-only. Do not call `execute`.
+
+- ✅ Zendesk / ZoomInfo tools listed → note the names; they plug into the same
+  `/pull-account` skill.
+- ❌ Not listed → **ask admin:** "Please add read-only Zendesk (tickets) and ZoomInfo
+  (company + contacts) toolsets to C1's AI connections for my user."
+
+When Claude asks to run `execute`, approve only reads — never an update, create or
+delete.
+
 ## Results (fill in, then paste this table — no customer data — into CHECKPOINT)
 
 | Step | Result (✅/❌) | Error message / notes |
@@ -115,7 +132,8 @@ Don't commit any of these secrets or paste them into chat.
 | A1 AI connections visible | ✅ | 2026-09-28: "Connect AI assistants to C1" section shows an MCP server URL (copy it from the C1 UI; not stored in the repo) |
 | A2 Claude Code can add URL | ✅ | |
 | A3 Sign-in works | ✅ | |
-| A4 Tools present (which?) | ✅ Salesforce | Zendesk / ZoomInfo not yet checked; record tool names |
+| A4 Tools present (which?) | ✅ | Meta-tools: search_tools, execute (destructive), find_api_objects, count_api_objects, get_execution, list/load_guide, vfs tools. App tools are found via search_tools (A7) |
 | A5 Toolsets requestable | n/a | Salesforce already granted |
 | A6 Read-only lookup works | ✅ | 2026-09-28: owner, active contract, renewal returned (7 tool calls). No ARR field — Amount is TCV |
+| A7 Zendesk / ZoomInfo tools found | | |
 | B (if used) | | |

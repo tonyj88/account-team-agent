@@ -59,8 +59,10 @@ Phase B's final check needs a live run on Tony's laptop (gateway + real data): b
 - Put the blank Account Plan template at `data/templates/account_plan.docx` on the laptop
   (gitignored — it's Confidential; only its field list is in the repo).
 - **C1 follow-ups (Salesforce via C1 works ✅ 2026-09-28):**
-  - In `/mcp` → `c1`, list the tool names (names only) and check whether Zendesk and
-    ZoomInfo tools exist; if not, request those toolsets in C1 → Requests.
+  - Run step **A7** in `docs/C1_ACCESS_TEST.md` (discovery via `search_tools`) to see
+    whether Zendesk and ZoomInfo are reachable; if not, the step gives the admin ask.
+  - Never approve a C1 `execute` call that writes; until the G0 guardrail hook exists,
+    review each `execute` prompt.
   - Confirm with leadership how ARR should be calculated (Salesforce Amount is TCV).
 - Copilot-filled template for one account (Phase G2 test case) — lower priority now.
 - Approve the cost of re-extracting all notes once the Phase C prompt is ready.

@@ -130,6 +130,22 @@ Findings that shape the design:
 - Records have stable IDs (contract number, opportunity) ⇒ provenance cites the
   Salesforce record + field, which is stronger than a quote.
 
+How C1 exposes tools (seen 2026-09-28): not one tool per app, but a small **meta-tool**
+set — `search_tools` (discover app tools), `execute` (run one; flagged
+**destructive · open-world** because it can run *any* granted operation, writes
+included), read-only helpers (`find_api_objects`, `count_api_objects`,
+`get_execution`, `list_guides`/`load_guide`), and a virtual file store
+(`create_vfs*`, `list_vfs_files`, `get_vfs_download_url`) that may suit bulk pulls.
+
+**Write-safety guardrail (required before G0 ships):** the bot must never change
+Salesforce/Zendesk/ZoomInfo.
+- `.claude/settings.json`: allow the read-only C1 tools; leave `execute` on "ask" (never
+  auto-approved).
+- A `PreToolUse` hook on the C1 `execute` tool that inspects the requested operation and
+  **blocks anything that isn't a read** (SOQL `SELECT`, get/list/search). Deterministic
+  code, not a prompt instruction.
+- The skill's instructions also say read-only, as a second layer.
+
 Architecture — **Claude Code fetches, Python decides:**
 - **G0 — Fetcher (Claude Code skill, no Python LLM calls):** a project skill
   `.claude/skills/pull-account/` (`/pull-account <account>`) that uses the C1 MCP tools
