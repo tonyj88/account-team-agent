@@ -112,7 +112,7 @@ Don't commit any of these secrets or paste them into chat.
 
 | Step | Result (✅/❌) | Error message / notes |
 |---|---|---|
-| A1 AI connections visible | | |
+| A1 AI connections visible | ✅ | 2026-09-28: "Connect AI assistants to C1" section shows an MCP server URL (copy it from the C1 UI; not stored in the repo) |
 | A2 Claude Code can add URL | | |
 | A3 Sign-in works | | |
 | A4 Tools present (which?) | | |
