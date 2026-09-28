@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(git add *)",
-      "Bash(git commit -q -m 'Re-plan around the Account Plan goal; add subagent handoff workflow *)",
-      "Bash(git push *)"
-    ]
-  }
-}
