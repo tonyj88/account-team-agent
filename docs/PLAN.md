@@ -131,7 +131,7 @@ it's the formal route if a read permission is ever missing. Goal: fewest manual 
   Claude Code session on the laptop pulls each account's data and **saves the response
   as a snapshot file into `data/drop/exports/`** — so G1's ingest, provenance (cite the
   snapshot row) and supersession work unchanged, and the Python bot never holds
-  Salesforce credentials. Exports stay the fallback.
+  Salesforce credentials. Exports stay the fallback. Test runbook: `docs/C1_ACCESS_TEST.md`.
 - **G1 — Export connectors** (`ingest/exports/`): one drop folder
   `data/drop/exports/` for CSV/XLSX. Each file is auto-detected by header signature,
   mapped via `config/export_mappings.yaml` (column → field key, so a changed report
