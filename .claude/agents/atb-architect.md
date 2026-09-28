@@ -15,7 +15,10 @@ Output (as your final message, for the main session to paste into CHECKPOINT.md)
    (with `path:line`).
 2. An ordered task list. Each task is sized for one `atb-implementer` run (one concern,
    roughly one module + its tests), names the files it touches, and states its
-   acceptance check. Mark which tasks can run in parallel (no shared files).
+   acceptance check. Mark which tasks can run in parallel (no shared files). Tag each
+   task with agent + model, e.g. `→ atb-implementer (claude-sonnet-5)`. Tag a task
+   Opus 5 only if it is prompt/schema design or extraction-quality debugging.
+   End the list with `→ atb-phase-reviewer (claude-opus-5)`.
 3. Open questions that need Tony's decision — never guess on those.
 
 ## Project invariants (every design must preserve these)

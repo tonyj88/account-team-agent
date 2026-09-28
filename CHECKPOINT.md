@@ -6,17 +6,42 @@ Short status snapshot. Design lives in [docs/PLAN.md](docs/PLAN.md); session wor
 [CLAUDE.md](CLAUDE.md). Update this file at the end of every session that changes what's
 built or what's next — it is the source of truth for "where are we", not chat history.
 
+## Model guide
+
+Only `claude-opus-5` and `claude-sonnet-5` are available (company LLM gateway).
+**Default is Sonnet 5.** Use Opus 5 only for the rows marked below.
+
+| Work | Model | How |
+|---|---|---|
+| Running the session (orchestrating, committing, updating this file) | **claude-sonnet-5** | Start Claude Code on Sonnet 5 unless the next Handoff step says Opus 5 |
+| Implementing a task (code + tests) | **claude-sonnet-5** | `atb-implementer` |
+| Per-task review before each commit | **claude-sonnet-5** | `atb-reviewer` |
+| Codebase search | **claude-sonnet-5** | `atb-explorer` |
+| Designing a phase: schema, `fields.yaml`, fact lifecycle rules | **claude-opus-5** | `atb-architect` |
+| Writing or changing an LLM prompt / extraction schema | **claude-opus-5** | `atb-architect` designs it; implementer (Sonnet 5) wires it in |
+| Debugging bad extraction or answer quality on real notes | **claude-opus-5** | Opus 5 main session |
+| Mapping the Account Plan template to fields (Phase G) | **claude-opus-5** | `atb-architect` |
+| End-of-phase review before merge | **claude-opus-5** | `atb-phase-reviewer` |
+| Optional final PR review | Claude Code cloud session | Ask on the phase PR |
+
+Small, mechanical phases (D, E) may skip the architect and go straight to implementer
+tasks written by the Sonnet 5 main session; they still end with `atb-phase-reviewer`.
+
 ## Handoff
 
-**Current phase:** B — Time + staleness (Phase A done this session).
+**Current phase:** B — Time + staleness (Phase A done).
+**Branch / PR:** `claude/awesome-lamport-uwdz70`, PR tonesjones/account-team-bot#1.
 
 **Next tasks**
-1. → `atb-architect`: design Phase B — date parsing sources and precedence
-   (frontmatter `date`, email `Date:`, filename date, file mtime as low-confidence),
-   where `occurred_at` gets set, and the `atb action-items list/resolve` CLI shape.
-   Output a task list to replace this entry.
-2. → `atb-implementer` (after 1): tasks from the architect's list, one per run.
-3. → `atb-reviewer`: after each implementer run, before commit.
+1. → `atb-architect` (**claude-opus-5**): design Phase B — date parsing sources and
+   precedence (frontmatter `date`, email `Date:`, filename date, file mtime as
+   low-confidence), where `occurred_at` gets set, and the
+   `atb action-items list/resolve` CLI shape. Output a model-tagged task list to replace
+   this entry. (Phase B is small; running this on Sonnet 5 is acceptable if budget is
+   tight.)
+2. → `atb-implementer` (**claude-sonnet-5**): the architect's tasks, one per run.
+3. → `atb-reviewer` (**claude-sonnet-5**): after each implementer run, before commit.
+4. → `atb-phase-reviewer` (**claude-opus-5**): once all Phase B tasks are committed.
 
 Phase B's final check needs a live run on Tony's laptop (gateway + real data): before/after
 `atb ask` showing a resolved action item is no longer reported as owed.
@@ -34,18 +59,22 @@ Phase B's final check needs a live run on Tony's laptop (gateway + real data): b
 
 ## Phase status
 
-| # | Deliverable | Agent(s) | Gated on | Status |
-|---|---|---|---|---|
-| 0–4 | Scaffold, ingest/normalize/dedup, resolution + review queue, LLM extraction, QA CLI | — | — | ✅ done (pre-replan) |
-| A | Re-baseline: docs/PLAN.md, CLAUDE.md, subagents, this Handoff | main | — | ✅ done |
-| B | Time + staleness: `occurred_at`, action-item resolve CLI, dated QA context | architect → implementer → reviewer | — | ⬜ next |
-| C | Standardized capture: `AccountFact` + `fields.yaml`, wider signals, contact merge, meeting linking, teammate note template | architect → implementer → reviewer | — | ⬜ |
-| D | Account brief render + `atb facts override` | implementer → reviewer | C | ⬜ |
-| E | CRM CSV stub → CRM-sourced facts | implementer → reviewer | C | ⬜ |
-| F | Service layer + local FastAPI web app | architect → implementer → reviewer | D | ⬜ |
-| G | Fill leadership Account Plan template + periodic refresh | architect → implementer → reviewer | Account Plan template | ⏸ waiting |
-| H | Team distribution via M365 Copilot agent | architect | IT answer | ⏸ waiting |
-| H-fb | Cloudflare fallback (D1/R2/Worker + Access), read-only first | architect → implementer → reviewer | IT rejects H + data approval | ⏸ waiting |
+Models: **O5** = claude-opus-5, **S5** = claude-sonnet-5. "impl → rev" always means
+`atb-implementer` (S5) → `atb-reviewer` (S5) per task; every phase ends with
+`atb-phase-reviewer` (O5).
+
+| # | Deliverable | Design | Build | Gated on | Status |
+|---|---|---|---|---|---|
+| 0–4 | Scaffold, ingest/normalize/dedup, resolution + review queue, LLM extraction, QA CLI | — | — | — | ✅ done (pre-replan) |
+| A | Re-baseline: docs/PLAN.md, CLAUDE.md, subagents, this Handoff | — | main session | — | ✅ done |
+| B | Time + staleness: `occurred_at`, action-item resolve CLI, dated QA context | architect (O5; S5 ok) | impl → rev (S5) | — | ⬜ next |
+| C | Standardized capture: `AccountFact` + `fields.yaml`, wider signals + new extraction prompt, contact merge, meeting linking, teammate note template | architect (**O5 required**) | impl → rev (S5) | — | ⬜ |
+| D | Account brief render + `atb facts override` | main session (S5) | impl → rev (S5) | C | ⬜ |
+| E | CRM CSV stub → CRM-sourced facts | main session (S5) | impl → rev (S5) | C | ⬜ |
+| F | Service layer + local FastAPI web app | architect (O5) | impl → rev (S5) | D | ⬜ |
+| G | Fill leadership Account Plan template + periodic refresh | architect (**O5 required**) | impl → rev (S5) | Account Plan template | ⏸ waiting |
+| H | Team distribution via M365 Copilot agent | architect (O5) | — | IT answer | ⏸ waiting |
+| H-fb | Cloudflare fallback (D1/R2/Worker + Access), read-only first | architect (O5) | impl → rev (S5) | IT rejects H + data approval | ⏸ waiting |
 
 Deprioritized (unchanged): Teams bot via Graph, Salesforce write.
 

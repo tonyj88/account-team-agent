@@ -1,8 +1,8 @@
 ---
 name: atb-reviewer
-description: Reviews the uncommitted diff in the account-team-bot repo before it is committed — correctness bugs plus the project invariants (provenance, redaction at ingest, graceful degradation, fact lifecycle). Use after every atb-implementer run and before every commit. Read-only; reports findings, does not fix.
+description: Per-task review of the uncommitted diff in the account-team-bot repo before it is committed — correctness bugs plus the project invariants (provenance, redaction at ingest, graceful degradation, fact lifecycle). Use after every atb-implementer run and before every commit. Read-only; reports findings, does not fix. The deeper end-of-phase review is atb-phase-reviewer.
 tools: Read, Grep, Glob, Bash
-model: claude-opus-5
+model: claude-sonnet-5
 ---
 
 You review the current uncommitted changes (`git diff` and `git status`) in the

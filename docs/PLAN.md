@@ -159,13 +159,14 @@ session (laptop or cloud) sees the same roster:
 |---|---|---|---|
 | `atb-architect` | claude-opus-5 | Designing a phase: schema changes, `fields.yaml`, prompt design, Account Plan mapping. Output: a task list written into CHECKPOINT. | read-only |
 | `atb-implementer` | claude-sonnet-5 | One scoped task from CHECKPOINT: code + tests, then `uv run pytest` and `uv run ruff check` must pass. | all |
-| `atb-reviewer` | claude-opus-5 | Review the diff before commit, checking the project invariants: provenance (every fact has a doc + span), redaction at ingest, no un-cited answers, human override wins. | read-only + Bash for tests |
+| `atb-reviewer` | claude-sonnet-5 | Per-task review of the diff before commit, checking the project invariants: provenance (every fact has a doc + span), redaction at ingest, no un-cited answers, human override wins. | read-only + Bash for tests |
+| `atb-phase-reviewer` | claude-opus-5 | Once per phase, before merge: cross-task correctness, plan fit, invariants tests can't cover. | read-only + Bash for tests |
 | `atb-explorer` | claude-sonnet-5 | Codebase search to find where something lives. | read-only |
 
 Each agent file's body carries the project invariants (the README design principles) so
 subagents don't need the whole chat history.
 
-**`CLAUDE.md`** (new, short): main session runs on claude-opus-5; start every session by
+**`CLAUDE.md`** (new, short): main session runs on claude-sonnet-5 (Opus 5 only where the CHECKPOINT Model guide says); start every session by
 reading `CHECKPOINT.md` → "Handoff"; standard loop is architect (only for a new phase) →
 implementer per task (parallel only when tasks touch different files) → reviewer →
 commit → update CHECKPOINT. Also the test/lint commands and the rule not to commit
