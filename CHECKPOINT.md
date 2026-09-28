@@ -42,22 +42,34 @@ tasks written by the Sonnet 5 main session; they still end with `atb-phase-revie
 2. → `atb-implementer` (**claude-sonnet-5**): the architect's tasks, one per run.
 3. → `atb-reviewer` (**claude-sonnet-5**): after each implementer run, before commit.
 4. → `atb-phase-reviewer` (**claude-opus-5**): once all Phase B tasks are committed.
+5. Then Phase C → `atb-architect` (**claude-opus-5**, required): design the plan data
+   model and MEDDPICC-focused extraction from `docs/ACCOUNT_PLAN_MAPPING.md` and
+   `config/account_plan_fields.yaml`. Phase B's dates feed Phase C/F (staleness, review
+   cadence), so do B first.
 
 Phase B's final check needs a live run on Tony's laptop (gateway + real data): before/after
 `atb ask` showing a resolved action item is no longer reported as owed.
 
 **Waiting on Tony**
-- Leadership **Account Plan template** → unblocks Phase G.
-- **IT answer** on M365 Copilot agents (declarative over SharePoint vs. API plugin) →
-  Phase H, or the Cloudflare fallback.
-- For the Cloudflare fallback: is customer data allowed on Cloudflare, and on whose account?
+- Put the blank Account Plan template at `data/templates/account_plan.docx` on the laptop
+  (gitignored — it's Confidential; only its field list is in the repo).
+- **CRM source:** result of testing the approved Copilot ↔ Salesforce integration →
+  unblocks Phase G. Until then snapshot fields are entered by hand (`atb plan set`).
+- Approve the cost of re-extracting all notes once the Phase C prompt is ready.
+- **IT answer** on M365 Copilot agents → Phase H, or the Cloudflare fallback (plus: is
+  customer data allowed on Cloudflare, on whose account?).
 
 **Last verification**
 - 2026-09-21 (laptop, live): 70/71 docs extracted ok (1 empty skipped), 100 tests passing,
   ruff clean, synthesis `atb ask` returned a cited answer with no leaked secrets.
-- 2026-09-28: docs/workflow-only changes plus one docstring edit; no code behavior changed.
+- 2026-09-28: docs/config-only changes (plan, agents, template field list); no code behavior changed.
 
 ## Phase status
+
+The Account Plan template (received 2026-09-28) now drives the plan. Field list:
+`config/account_plan_fields.yaml`; section-by-section sources:
+`docs/ACCOUNT_PLAN_MAPPING.md`. MVP = sections 1, 4, 5, 10, 11 + trigger alerts;
+low-confidence values are marked for human approval.
 
 Models: **O5** = claude-opus-5, **S5** = claude-sonnet-5. "impl → rev" always means
 `atb-implementer` (S5) → `atb-reviewer` (S5) per task; every phase ends with
@@ -66,24 +78,31 @@ Models: **O5** = claude-opus-5, **S5** = claude-sonnet-5. "impl → rev" always 
 | # | Deliverable | Design | Build | Gated on | Status |
 |---|---|---|---|---|---|
 | 0–4 | Scaffold, ingest/normalize/dedup, resolution + review queue, LLM extraction, QA CLI | — | — | — | ✅ done (pre-replan) |
-| A | Re-baseline: docs/PLAN.md, CLAUDE.md, subagents, this Handoff | — | main session | — | ✅ done |
+| A | Re-baseline, subagents, model guide, template mapping + field list | — | main session | — | ✅ done |
 | B | Time + staleness: `occurred_at`, action-item resolve CLI, dated QA context | architect (O5; S5 ok) | impl → rev (S5) | — | ⬜ next |
-| C | Standardized capture: `AccountFact` + `fields.yaml`, wider signals + new extraction prompt, contact merge, meeting linking, teammate note template | architect (**O5 required**) | impl → rev (S5) | — | ⬜ |
-| D | Account brief render + `atb facts override` | main session (S5) | impl → rev (S5) | C | ⬜ |
-| E | CRM CSV stub → CRM-sourced facts | main session (S5) | impl → rev (S5) | C | ⬜ |
-| F | Service layer + local FastAPI web app | architect (O5) | impl → rev (S5) | D | ⬜ |
-| G | Fill leadership Account Plan template + periodic refresh | architect (**O5 required**) | impl → rev (S5) | Account Plan template | ⏸ waiting |
+| C | Plan data model (`AccountFact` + approval states, `Stakeholder`) + MEDDPICC-focused extraction redesign + teammate note template | architect (**O5 required**) | impl → rev (S5) | re-extract cost OK | ⬜ |
+| D | `atb plan render` markdown preview, `plan review/approve/set` CLI, separate evidence file | main session (S5) | impl → rev (S5) | C | ⬜ |
+| E | Fill the real .docx template + evidence file; plan version history | architect (O5) | impl → rev (S5) | D | ⬜ |
+| F | Trigger-event detection + `atb plan due` (review cadence) | main session (S5) | impl → rev (S5) | C | ⬜ |
+| G | CRM input for Snapshot/Opportunities (Copilot+SF, CSV export, or direct) | architect (O5) | impl → rev (S5) | Tony's Copilot/SF test | ⏸ waiting |
+| I | Remaining sections (3, 7, 8, 9, then 2, 6, 12 as drafts) + meeting linking | architect (**O5 required**, prompt work) | impl → rev (S5) | E (+ G for 9) | ⬜ |
+| J | Service layer + local FastAPI web app | architect (O5) | impl → rev (S5) | E | ⬜ |
 | H | Team distribution via M365 Copilot agent | architect (O5) | — | IT answer | ⏸ waiting |
 | H-fb | Cloudflare fallback (D1/R2/Worker + Access), read-only first | architect (O5) | impl → rev (S5) | IT rejects H + data approval | ⏸ waiting |
 
-Deprioritized (unchanged): Teams bot via Graph, Salesforce write.
+Deprioritized (unchanged): Teams bot via Graph, Salesforce write (plans are uploaded to
+Salesforce by hand).
 
 ## Known issues carried forward
 - `Document.occurred_at` is never set → no recency anywhere (Phase B).
 - No way to mark an action item done; unverified whether `(done)` changes answers
   (Phase B).
-- Contacts duplicate per document; no roles (Phase C).
-- `Meeting` model unused; `resolve/meeting_link.py` not built (Phase C).
+- Contacts duplicate per document; no roles (Phase C → `Stakeholder`).
+- `Meeting` model unused; `resolve/meeting_link.py` not built (Phase I).
+- Loading `config/account_plan_fields.yaml` needs PyYAML, which is not a dependency yet —
+  Phase C adds it (or the architect converts the file to TOML, stdlib `tomllib`).
+- Tests for .docx filling must use a synthetic fixture with the same table layout, never
+  the real (Confidential) template.
 - Embedding cost logged as $0 in IngestLog.
 - Runtime router uses `claude-haiku-4-5` (live-verified through the gateway). If the
   gateway drops it, set `models.route = "claude-sonnet-5"` in `config.toml`.

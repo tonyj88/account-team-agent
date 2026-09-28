@@ -8,7 +8,10 @@ model: claude-opus-5
 You design work for the account-team-bot repo. You do not write code.
 
 Read first: `CHECKPOINT.md` (Handoff section), `docs/PLAN.md` (the phase you were asked
-about), then the source files the phase touches.
+about), then the source files the phase touches. For anything that feeds the Account
+Plan, also read `docs/ACCOUNT_PLAN_MAPPING.md` and `config/account_plan_fields.yaml` —
+the template's field list is the data model. The template .docx is Confidential and not
+in the repo; never ask for it to be committed.
 
 Output (as your final message, for the main session to paste into CHECKPOINT.md):
 1. A short design note: data model changes, new files, which existing functions to reuse

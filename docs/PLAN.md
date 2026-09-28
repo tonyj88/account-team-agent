@@ -11,8 +11,10 @@ Q&A "brain" over meeting notes. After review + Q&A, the goal is sharper:
   agent that coworkers add — so design for it now, build it later after IT weighs in.
 - **Pain points (all confirmed):** inconsistent notes across sources, stale facts, no CRM
   data, manual intake, no team access.
-- The Account Plan **template hasn't arrived yet**. This plan does template-independent
-  foundation work now and gates template-specific work on receiving it.
+- The Account Plan template arrived 2026-09-28 (Black Duck, MEDDPICC-based, updated
+  quarterly for $150k+ ARR accounts, semiannually below; within 5 business days of a
+  trigger event; stored in Salesforce Notes & Attachments). See
+  `docs/ACCOUNT_PLAN_MAPPING.md`.
 - The old external design doc (`fizzy-gathering-dragonfly.md`) is retired; this plan
   becomes the in-repo source of truth.
 
@@ -39,79 +41,102 @@ Gaps vs. the goal:
 7. README claim "structured questions skip the LLM" is inaccurate (structured still goes
    router → Sonnet over a fact dump). CRM questions always decline (Phase 5 not built).
 
-## Core design change: an evidence-backed "account field" layer
-Introduce one generic model the Account Plan will map onto, so the template becomes config,
-not code:
+## Core design change: the Account Plan template is the data model
+Template received 2026-09-28 (Word, 12 sections + appendix, plain tables). The blank .docx
+is **Confidential** and is never committed: it lives on Tony's laptop at
+`data/templates/account_plan.docx` (gitignored). Only its field list is in the repo:
+`config/account_plan_fields.yaml` and `docs/ACCOUNT_PLAN_MAPPING.md`.
 
-- `AccountFact` (new, `models.py`): `account_id, field_key` (e.g. `commercial.renewal_date`,
-  `relationship.champion`, `health.sentiment`), `value` (JSON), `observed_at` (source
-  document date), `source` (note | crm | human), `document_id` + `char_start/end`,
-  `status` (current | superseded | overridden), `confidence`.
-- **Current value rule:** human override > newest CRM row > newest note-derived fact; older
-  ones marked `superseded`, never deleted (provenance + "disagreement is signal").
-- Field catalog lives in a config file (`fields.yaml`): key, description, type, which
-  extraction category feeds it. Swapping in the leadership template = editing this file +
-  a renderer mapping.
-- Existing `ActionItem/Decision/Risk/Contact` tables stay; action items get the resolve CLI
-  and `observed_at`.
+- **Scalar fields** (Snapshot, MEDDPICC elements, strategy text) → `AccountFact` (new,
+  `models.py`): `account_id, field_key` (from the YAML, e.g. `meddpicc.champion`),
+  `value` (JSON), `observed_at`, `source` (note | crm | human | llm_draft),
+  `document_id` + `char_start/end`, `status` (current | superseded | overridden),
+  `confidence`, `approval` (auto | needs_approval | approved | rejected).
+- **Repeating rows** get their own tables, each row with the same provenance/approval
+  columns: `Stakeholder` (merged Contact + MEDDPICC role, position, tier, relationship
+  owner, next touch), `Risk` (extended: mitigation, owner, by-when), `ActionItem`
+  (extended: 30/60/90 bucket from due date), later `Competitor`, `Partner`, `Opportunity`.
+- **Current value rule:** human > newest CRM > newest note-derived; older values
+  superseded, never deleted.
+- **Human approval rule (Tony, 2026-09-28): anything low-confidence is marked for human
+  approval.** A value is `needs_approval` when any of: confidence below threshold;
+  `source=llm_draft` (judgement fields: thesis, R/A/G, position, the ask); sources
+  disagree; the only evidence is older than the review cycle. `approved` values are only
+  ever set by a human. The rendered plan visibly marks unapproved values.
 
-## Phased plan
+## Phased plan (re-ordered around the template)
 
-**Phase A — Re-baseline + build workflow (small, now)**
-- Add `docs/PLAN.md` (this plan) and rewrite `CHECKPOINT.md` phase table around it; fix the
-  README "skips the LLM" claim and the dangling `meeting_link.py` reference.
-- Set up the subagent workflow described in **Build workflow** below (agent files,
-  `CLAUDE.md`, handoff section in `CHECKPOINT.md`).
+MVP (Tony, 2026-09-28) = the fact-based sections: **1 Snapshot, 4 MEDDPICC,
+5 Stakeholders, 10 Risks, 11 30/60/90 Actions**, plus trigger-event alerts. All other
+sections are rendered blank until later phases.
+
+**Phase A — Re-baseline + build workflow** ✅
 
 **Phase B — Time + staleness (now)**
 - Populate `Document.occurred_at`: frontmatter `date`, email `Date:` header, date in
   filename, fallback to file mtime (flagged as low-confidence). Changes in
   `normalize/core.py` + `ingest/folder.py` / `obsidian.py`.
-- `atb action-items list/resolve` CLI (the known gap), and verify via live before/after
-  `atb ask` that `(done)` items stop being reported as owed; adjust `_ANSWER_SYSTEM_PROMPT`
-  in `qa/core.py` if not.
-- Include dates in `gather_structured_context` (`qa/structured.py`) so answers prefer
-  recent facts.
+- `atb action-items list/resolve` CLI, and verify via live before/after `atb ask` that
+  `(done)` items stop being reported as owed; adjust `_ANSWER_SYSTEM_PROMPT` in
+  `qa/core.py` if not.
+- Include dates in `gather_structured_context` (`qa/structured.py`).
 
-**Phase C — Standardized capture (now)**
-- Expand `extract/schema.py` + `SYSTEM_PROMPT` with signal categories: commercial,
-  health/sentiment, technical, relationship roles — emitted as `AccountFact` candidates
-  keyed to `fields.yaml`, same verbatim-quote provenance. Bump `extraction_version`;
-  re-extract.
-- Contact merge: normalize by email/name per account, attach roles, keep per-doc mentions
-  as evidence.
-- Meeting linking (`resolve/meeting_link.py`): group docs by account + date + attendee
-  overlap.
-- **Teammate intake template:** a markdown note template with frontmatter (`customer`,
-  `date`, `attendees`, `author`) + a short guide — the lowest-friction way to standardize
-  notes before any automation.
+**Phase C — Account Plan data model + MEDDPICC extraction (next; Opus 5 design)**
+- `AccountFact` + approval states + `Stakeholder` table; load
+  `config/account_plan_fields.yaml` as the field catalog.
+- Redesign `extract/schema.py` + `SYSTEM_PROMPT` around the MVP sections: MEDDPICC
+  evidence per element (verbatim quote required), stakeholders with MEDDPICC role and
+  position, risks with mitigation/owner/date, action items with owner/due. Each item
+  carries a confidence. Bump `extraction_version`; re-extract (ask Tony first — cost).
+- Contact → Stakeholder merge per account (email, then normalized name), keeping every
+  mention as evidence.
+- Teammate note template (markdown + frontmatter: `customer`, `date`, `attendees`,
+  `author`) with prompts that mirror MEDDPICC, so notes arrive pre-structured.
 
-**Phase D — Account brief output (now)**
-- `atb brief render --account X` → markdown "living account brief" from current
-  `AccountFact`s + open action items, each line cited. `atb brief refresh` re-renders all.
-- `atb facts list/override` CLI so Tony can correct a field (writes `source=human`).
-- Output to `data/briefs/<account>.md` — shareable files that a SharePoint-backed Copilot
-  declarative agent could read later with zero API hosting.
+**Phase D — Plan preview, approval CLI, evidence file**
+- `atb plan render --account X` → markdown preview in the template's 12-section order
+  (MVP sections filled, others marked "not yet automated"). Unapproved values marked
+  `⚠ needs approval`.
+- `atb plan review --account X` (list needs_approval values with their evidence),
+  `atb plan approve/reject <id>`, `atb plan set <field_key> <value>` (human-entered
+  values, e.g. Target ARR, until CRM data exists).
+- **Separate evidence file** per plan (Tony's choice): `<account>_evidence.md` listing, per
+  field/row, the source document, date and quote.
 
-**Phase E — CRM CSV stub (now/next)**
-- `crm/csv_stub.py` reading Salesforce report exports from `data/crm_exports`; writes
-  `AccountFact`s with `source=crm` (renewal, ARR, open cases). Router's
-  `unsupported_crm` path then answers from those facts instead of declining.
+**Phase E — Word output (fills the real template)**
+- Fill `data/templates/account_plan.docx` by locating each section's table by its heading
+  cell and writing cells (python-docx, already a dependency). Output
+  `data/plans/<account>_<date>.docx` + the evidence file. Unapproved values get a visible
+  marker so nothing unconfirmed goes to Salesforce unnoticed.
+- Record plan versions (Last Reviewed / Next Review in Section 1).
 
-**Phase F — Service layer + local web app (next)**
-- `atb/service.py` wrapping ask / brief / facts / action-items; CLI calls it.
-- FastAPI app in `api/` exposing those as a clean OpenAPI surface (the exact shape a
-  Copilot API plugin needs) + minimal local chat/brief UI. Laptop-only, no auth yet.
+**Phase F — Trigger events + review cadence**
+- Extraction flags trigger events from the template appendix: champion/EB leaves or
+  changes role; reorg/acquisition/funding; earnings miss/budget or hiring freeze;
+  competitor foothold; security incident/audit finding; renewal in final two quarters.
+- `atb plan due` lists plans due for refresh (ARR ≥ $150k quarterly, else semiannual) and
+  plans with a trigger event in the last 5 business days.
 
-**Phase G — Account Plan template (GATED: when Tony shares it)**
-- Map each template section → `fields.yaml` keys; gap report of fields with no source.
-- Renderer that fills the leadership format (docx if that's what it is) from current facts,
-  with a "sources/last updated" appendix and highlighted fields that are stale or empty.
-- Scheduled periodic refresh (ingest → extract → render) on the laptop.
+**Phase G — CRM input (GATED: Tony testing the approved Copilot ↔ Salesforce integration)**
+- Snapshot fields (owners, segment, industry, FY, ARR, renewal) and later Opportunities.
+- Options, decided after Tony's test: (a) Tony uses Copilot+Salesforce to produce an
+  export/summary dropped into intake, ingested as `source=crm`; (b) CSV report exports via
+  `crm/csv_stub.py`; (c) direct access if IT grants it. Until then these fields come from
+  `atb plan set` (human).
+
+**Phase I — Remaining sections**
+- 3 Where we are today, 7 Competition, 8 Partners, 9 Opportunities (needs Phase G), then
+  2 Strategy, 6 Org chart, 12 The Ask as `llm_draft` values that always need approval.
+- Meeting linking (`resolve/meeting_link.py`: account + date + attendee overlap) — lets
+  the evidence file show when two sources disagree about the same meeting.
+
+**Phase J — Service layer + local web app**
+- `atb/service.py` wrapping ask / plan / review / action-items; CLI calls it. FastAPI app
+  in `api/` (OpenAPI surface a Copilot API plugin needs) + minimal local UI.
 
 **Phase H — Team distribution (GATED: IT answer)**
 - Research with IT which M365 Copilot agent type is allowed: declarative agent over
-  SharePoint (just publish Phase D/G files) vs. API plugin (needs hosted Phase F API + auth).
+  SharePoint (just publish Phase D/E files) vs. API plugin (needs hosted Phase J API + auth).
 - Shared intake (email-forward IMAP connector already stubbed in `config.py`) once teammates
   contribute. Graph/Teams bot and Salesforce write stay deprioritized.
 
@@ -138,13 +163,13 @@ Two levels, pick at build time:
    route/answer prompts from `qa/core.py`.
 
 Design implications pulled forward into earlier phases:
-- Phase D/F outputs must be serializable (JSON/markdown) so `atb publish` is just an
+- Phase D/E/J outputs must be serializable (JSON/markdown) so `atb publish` is just an
   exporter — no Python needed in the cloud.
 - Keep redaction at ingest (already true) so nothing un-redacted can ever be published.
 
 Open decision to confirm before building (not a code question): whether customer data may
 be stored on a Cloudflare account, and whose account (company vs. personal). If not
-allowed, this fallback degrades to the Phase F web app running on an internal VM.
+allowed, this fallback degrades to the Phase J web app running on an internal VM.
 
 ## Build workflow: models, subagents, handoff
 Constraint: all build sessions run through the company LLM gateway, which offers
@@ -189,14 +214,20 @@ need gateway access from Cloudflare or a separate key — another reason to buil
 read-only level first.
 
 ## Verification
-- `uv run pytest` + `uv run ruff check` green after every phase; new unit tests for date
-  parsing, fact supersession rule, contact merge, meeting linking, brief rendering, CSV stub.
+- `uv run pytest` + `uv run ruff check` green after every task; new unit tests for date
+  parsing, supersession + approval rules, stakeholder merge, section rendering, docx
+  filling (against a synthetic fixture docx with the same table layout — never the real
+  template), trigger detection, review-due dates.
 - Phase B: live before/after `atb ask` on a real account showing a resolved action item no
   longer reported as owed.
-- Phase C/D: re-extract the existing 71 docs; spot-check one account's rendered brief —
-  every line has a citation that opens to the right span; no redaction leaks.
-- Phase E: drop a sample SF report CSV; "when's the renewal?" answers with a CRM citation.
-- Phase F: `uvicorn` locally, hit `/ask` and `/brief/{account}`; OpenAPI spec renders.
+- Phase C/D: re-extract (after Tony OKs cost); render one real account's preview. Every
+  MVP value has an evidence-file entry whose quote matches its source document;
+  low-confidence and judgement values show `⚠ needs approval`; no redaction leaks.
+- Phase E: open the generated .docx in Word on the laptop — layout unchanged, MVP cells
+  filled, unapproved markers visible, evidence file alongside.
+- Phase F: a note stating "our champion is leaving" raises a trigger; `atb plan due`
+  lists a $150k+ account whose last review is > 1 quarter old.
+- Phase J: `uvicorn` locally, hit `/ask` and `/plan/{account}`; OpenAPI spec renders.
 - H-fallback: `wrangler dev` against a local D1 seeded by `atb publish --dry-run`; then
-  deploy, confirm Access blocks an unlisted email and a teammate can open a brief whose
-  citations match the local DB.
+  deploy, confirm Access blocks an unlisted email and a teammate can open a plan whose
+  evidence matches the local DB.

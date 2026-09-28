@@ -1,5 +1,6 @@
 # Customer data — never commit. Contains meeting transcripts and contact details.
 data/
+# (includes data/templates/ — the Account Plan template is Confidential; never commit it)
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
