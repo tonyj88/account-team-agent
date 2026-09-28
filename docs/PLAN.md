@@ -117,15 +117,43 @@ sections are rendered blank until later phases.
 - `atb plan due` lists plans due for refresh (ARR ≥ $150k quarterly, else semiannual) and
   plans with a trigger event in the last 5 business days.
 
-**Phase G — CRM input (GATED: Tony testing the approved Copilot ↔ Salesforce integration)**
-- Snapshot fields (owners, segment, industry, FY, ARR, renewal) and later Opportunities.
-- Options, decided after Tony's test: (a) Tony uses Copilot+Salesforce to produce an
-  export/summary dropped into intake, ingested as `source=crm`; (b) CSV report exports via
-  `crm/csv_stub.py`; (c) direct access if IT grants it. Until then these fields come from
-  `atb plan set` (human).
+**Phase G — Structured exports + Copilot draft reconciliation (unblocked 2026-09-28)**
+Tony has normal access to Salesforce, Zendesk and ZoomInfo (via ConductorOne) and can
+export lists from each. ConductorOne itself is access management, not a data source —
+it's the formal route if a read permission is ever missing. Goal: fewest manual steps.
+
+- **G1 — Export connectors** (`ingest/exports/`): one drop folder
+  `data/drop/exports/` for CSV/XLSX. Each file is auto-detected by header signature,
+  mapped via `config/export_mappings.yaml` (column → field key, so a changed report
+  layout is a config edit), and resolved to accounts by account name / domain column.
+  - Salesforce report → Snapshot (owners, segment, industry, FY, ARR, renewal),
+    products/licences (Section 3), opportunities (Section 9). `source=crm`.
+  - Zendesk ticket export → open tickets / ERs (Section 3), escalations as Risks
+    (Section 10), security-incident trigger. `source=zendesk`.
+  - ZoomInfo contact/company export → titles, reporting lines and seniority for
+    Stakeholders (5) and Org chart tiers (6); industry/size/funding; exec-change and
+    funding triggers. `source=zoominfo`; roles and tiers still `needs_approval`.
+  - Provenance: the export file is stored as a Document; each fact cites its row (the
+    row's text is the verbatim quote), so the evidence file works unchanged.
+  - Re-dropping a newer export supersedes older values (same lifecycle rule).
+- **G2 — Copilot draft import + reconciliation**: Tony has M365 Copilot (with its
+  Salesforce integration) fill a copy of the template; he drops the .docx into
+  `data/drop/copilot/`. The bot reads it with the same table locator as Phase E
+  (read instead of write) and stores each cell as `source=copilot_draft`, always
+  `needs_approval` (no citations). `atb plan reconcile --account X` produces a report:
+  agrees with evidence / conflicts with evidence / Copilot-only (no evidence) / bot-only.
+  Tony approves from that report. This is the "Copilot fills it, then it gets reviewed"
+  loop — the review runs locally through the company gateway, so filled plans never
+  leave the laptop.
+- **G3 — Fewer manual steps (after G1 works)**: check whether each app can schedule
+  a saved report/list to email. If yes, send them to the dedicated mailbox and enable the
+  IMAP connector (already stubbed in `config.py`) — exports then arrive hands-free.
+  Single command `atb refresh` = ingest → extract → render for all due plans.
+- **G4 — Screenshots (last resort)**: PNG in the drop folder → Claude vision extraction
+  → values always `needs_approval`, citing the image.
 
 **Phase I — Remaining sections**
-- 3 Where we are today, 7 Competition, 8 Partners, 9 Opportunities (needs Phase G), then
+- 3 Where we are today, 7 Competition, 8 Partners, 9 Opportunities (needs G1), then
   2 Strategy, 6 Org chart, 12 The Ask as `llm_draft` values that always need approval.
 - Meeting linking (`resolve/meeting_link.py`: account + date + attendee overlap) — lets
   the evidence file show when two sources disagree about the same meeting.

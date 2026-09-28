@@ -8,7 +8,11 @@
 #   key       stable id used in AccountFact.field_key / row tables
 #   label     the label as printed in the template
 #   source    where the value comes from:
-#               crm        Salesforce data (Phase G; `human` until then)
+#               crm        Salesforce report export (Phase G1; `human` until then)
+#               zendesk    Zendesk ticket export (Phase G1)
+#               zoominfo   ZoomInfo contact/company export (Phase G1)
+#               copilot_draft  cell read from a Copilot-filled copy of this template
+#                          (Phase G2); never cited, ALWAYS needs approval, any field
 #               note       extracted from meeting notes, verbatim-quote evidence required
 #               derived    computed from other fields/rows
 #               human      only a person can supply it
@@ -17,6 +21,7 @@
 #   approval  default approval state for values from this field:
 #               auto            accepted unless low-confidence / conflicting / stale
 #               needs_approval  always needs a human to approve
+#   alt_sources  other sources that can also supply the field
 #   mvp       true = filled in the first usable version (Tony, 2026-09-28)
 #
 # Rows (`kind: rows`) are repeating tables; `columns` follow the same fields.
@@ -45,8 +50,8 @@ sections:
       - {key: snapshot.se_owner, label: "SE Owner", source: crm, approval: auto}
       - {key: snapshot.sdr_owner, label: "SDR Owner", source: crm, approval: auto}
       - {key: snapshot.csm_renewal_tam_owners, label: "CSM/Renewal/TAM Owner(s)", source: crm, approval: auto}
-      - {key: snapshot.segment_geo, label: "Segment / Geo", source: crm, approval: auto}
-      - {key: snapshot.industry, label: "Industry", source: crm, approval: auto}
+      - {key: snapshot.segment_geo, label: "Segment / Geo", source: crm, alt_sources: [zoominfo], approval: auto}
+      - {key: snapshot.industry, label: "Industry", source: crm, alt_sources: [zoominfo], approval: auto}
       - {key: snapshot.fiscal_year, label: "Fiscal Year", source: crm, approval: auto}
       - {key: snapshot.current_arr, label: "Current ARR", source: crm, approval: auto}
       - {key: snapshot.renewal_dates, label: "Renewal Date(s)", source: crm, approval: auto}
@@ -78,7 +83,7 @@ sections:
     title: "Where We Are Today"
     mvp: false
     fields:
-      - {key: today.what_they_buy, label: "What they buy from us today", source: crm, approval: auto, note: "products, license model, seats, use cases, adoption, support tickets/ERs; notes add adoption signals"}
+      - {key: today.what_they_buy, label: "What they buy from us today", source: crm, alt_sources: [zendesk, note], approval: auto, note: "products, license model, seats, use cases, adoption, support tickets/ERs; notes add adoption signals"}
       - {key: today.their_business, label: "What we know about their business", source: note, approval: auto}
       - {key: today.other_vendors, label: "Who else do they buy from?", source: note, approval: auto}
       - {key: today.why_bought_us, label: "Why did they buy us originally, and is that reason still true?", source: llm_draft, approval: needs_approval}
@@ -108,7 +113,7 @@ sections:
     kind: rows
     columns:
       - {key: name, label: "Name", source: note, approval: auto}
-      - {key: role_title, label: "Role / Title", source: note, approval: auto}
+      - {key: role_title, label: "Role / Title", source: note, alt_sources: [zoominfo], approval: auto}
       - {key: meddpicc_role, label: "MEDDPICC role", source: note, approval: needs_approval, values: [EB, Champion, Coach, Tech, Influencer, Blocker]}
       - {key: position, label: "Position", source: llm_draft, approval: needs_approval, values: [Advocate, Supporter, Neutral, Detractor]}
       - {key: coverage, label: "Our coverage — who owns the relationship & next touch", source: note, approval: auto}
@@ -120,8 +125,8 @@ sections:
     kind: rows
     note: "Tier 1 = economic buyer & exec sponsor; Tier 2 = decision makers & budget owners; Tier 3 = influencers, technical & users. Blank or '?' in Tier 1/2 is an open risk."
     columns:
-      - {key: tier, label: "Tier", source: derived, approval: needs_approval, values: [1, 2, 3]}
-      - {key: name_title, label: "Name / Title", source: note, approval: auto}
+      - {key: tier, label: "Tier", source: derived, alt_sources: [zoominfo], approval: needs_approval, values: [1, 2, 3]}
+      - {key: name_title, label: "Name / Title", source: note, alt_sources: [zoominfo], approval: auto}
       - {key: code, label: "Code", source: llm_draft, approval: needs_approval, values: [C, S, N, D, "?"]}
       - {key: owned_by, label: "Owned by", source: human, approval: auto}
 
@@ -171,7 +176,7 @@ sections:
     mvp: true
     kind: rows
     columns:
-      - {key: risk, label: "Risk / blocker", source: note, approval: auto, note: "commercial, technical, political, competitive, timing, or internal"}
+      - {key: risk, label: "Risk / blocker", source: note, alt_sources: [zendesk], approval: auto, note: "commercial, technical, political, competitive, timing, or internal"}
       - {key: mitigation, label: "Mitigation", source: note, approval: auto}
       - {key: owner, label: "Owner", source: note, approval: auto}
       - {key: by_when, label: "By when", source: note, approval: auto}
@@ -203,9 +208,9 @@ sections:
 # From the template appendix: update the plan within 5 business days when any of these
 # happen. Extraction flags them (Phase F); renewal_final_two_quarters comes from CRM dates.
 trigger_events:
-  - {key: champion_or_eb_change, label: "Champion or economic buyer leaves, or changes role", source: note}
-  - {key: corporate_event, label: "Reorganisation, acquisition, divestment or funding event", source: note}
+  - {key: champion_or_eb_change, label: "Champion or economic buyer leaves, or changes role", source: note, alt_sources: [zoominfo]}
+  - {key: corporate_event, label: "Reorganisation, acquisition, divestment or funding event", source: note, alt_sources: [zoominfo]}
   - {key: financial_freeze, label: "Earnings miss, budget freeze or hiring freeze", source: note}
   - {key: competitor_beachhead, label: "Competitor lands a beachhead anywhere in the account", source: note}
-  - {key: security_incident, label: "Security incident, breach or audit finding in our domain", source: note}
+  - {key: security_incident, label: "Security incident, breach or audit finding in our domain", source: note, alt_sources: [zendesk]}
   - {key: renewal_final_two_quarters, label: "Renewal enters its final two quarters", source: derived}
