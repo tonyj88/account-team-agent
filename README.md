@@ -10,8 +10,14 @@ files, exported docs, Terret scribe transcripts, Teams Copilot recaps) into
 one place, extracts structured facts with an LLM, and answers questions with
 citations back to the source note.
 
-See **[CHECKPOINT.md](CHECKPOINT.md)** for current build status and what's
-next — start there when picking this project back up.
+The long-term goal is to keep leadership's Account Plan document filled in
+and refreshed per account, with every field cited to a source.
+
+- **[docs/PLAN.md](docs/PLAN.md)** — the design and phased plan.
+- **[CHECKPOINT.md](CHECKPOINT.md)** — current status and the **Handoff**
+  section (next tasks and which subagent to use). Start there when picking
+  this project back up.
+- **[CLAUDE.md](CLAUDE.md)** — how Claude Code sessions work on this repo.
 
 ## Design principles
 
@@ -22,11 +28,13 @@ next — start there when picking this project back up.
 - **Provenance over confidence.** Every extracted fact stores the document
   and character span it came from, so every answer is citable. An uncited
   answer about a customer commitment is worse than no answer.
-- **Structured questions skip the LLM.** "When's the renewal" resolves
-  against relational data / the CRM adapter directly. Only synthesis
-  questions ("what do we owe them") go through retrieval — sending a
-  deterministic question through RAG is how you get a confidently wrong
-  answer.
+- **Structured questions skip retrieval.** Questions about recorded facts
+  ("who are the key contacts", "what do we owe them") are answered from
+  extracted relational data only; just synthesis questions ("summarize our
+  last call") pull note excerpts via embeddings. Sending a deterministic
+  question through RAG is how you get a confidently wrong answer. (Both
+  paths still use an LLM to phrase the answer; CRM questions like "when's
+  the renewal" are declined until the CRM adapter lands.)
 - **Disagreement is signal.** The same meeting can arrive from multiple
   sources (Terret vs. a teammate's own notes); near-duplicates are kept
   separately and linked, not silently collapsed.

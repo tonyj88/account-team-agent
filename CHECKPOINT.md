@@ -2,72 +2,59 @@
 
 Last updated: 2026-09-28
 
-Status tracking for this project. Update this file at the end of any session
-that changes what's built or what's next — this is the source of truth for
-"where are we," not the chat history.
+Short status snapshot. Design lives in [docs/PLAN.md](docs/PLAN.md); session workflow in
+[CLAUDE.md](CLAUDE.md). Update this file at the end of every session that changes what's
+built or what's next — it is the source of truth for "where are we", not chat history.
+
+## Handoff
+
+**Current phase:** B — Time + staleness (Phase A done this session).
+
+**Next tasks**
+1. → `atb-architect`: design Phase B — date parsing sources and precedence
+   (frontmatter `date`, email `Date:`, filename date, file mtime as low-confidence),
+   where `occurred_at` gets set, and the `atb action-items list/resolve` CLI shape.
+   Output a task list to replace this entry.
+2. → `atb-implementer` (after 1): tasks from the architect's list, one per run.
+3. → `atb-reviewer`: after each implementer run, before commit.
+
+Phase B's final check needs a live run on Tony's laptop (gateway + real data): before/after
+`atb ask` showing a resolved action item is no longer reported as owed.
+
+**Waiting on Tony**
+- Leadership **Account Plan template** → unblocks Phase G.
+- **IT answer** on M365 Copilot agents (declarative over SharePoint vs. API plugin) →
+  Phase H, or the Cloudflare fallback.
+- For the Cloudflare fallback: is customer data allowed on Cloudflare, and on whose account?
+
+**Last verification**
+- 2026-09-21 (laptop, live): 70/71 docs extracted ok (1 empty skipped), 100 tests passing,
+  ruff clean, synthesis `atb ask` returned a cited answer with no leaked secrets.
+- 2026-09-28: docs/workflow-only changes plus one docstring edit; no code behavior changed.
 
 ## Phase status
 
-| # | Deliverable | Needs approval? | Status |
-|---|---|---|---|
-| 0 | Scaffold, config, models, storage | no | ✅ done |
-| 1 | Normalization + dedup + `folder` and `obsidian` connectors | no | ✅ done |
-| 2 | Entity resolution, alias table, review-queue CLI | no | ✅ done |
-| 3 | LLM extraction with provenance | LLM API only | ✅ done, live-verified |
-| 4 | QA service + web app | no | ✅ done, live-verified (web app not started) |
-| 5 | CRM adapter: CSV stub only | no | ⬜ not started |
-| 6 | *Deprioritized* — Teams bot + email connector | Azure app reg, Graph | ⬜ unscheduled |
-| 7 | *Deprioritized* — Salesforce read/write | SF read + write | ⬜ unscheduled |
+| # | Deliverable | Agent(s) | Gated on | Status |
+|---|---|---|---|---|
+| 0–4 | Scaffold, ingest/normalize/dedup, resolution + review queue, LLM extraction, QA CLI | — | — | ✅ done (pre-replan) |
+| A | Re-baseline: docs/PLAN.md, CLAUDE.md, subagents, this Handoff | main | — | ✅ done |
+| B | Time + staleness: `occurred_at`, action-item resolve CLI, dated QA context | architect → implementer → reviewer | — | ⬜ next |
+| C | Standardized capture: `AccountFact` + `fields.yaml`, wider signals, contact merge, meeting linking, teammate note template | architect → implementer → reviewer | — | ⬜ |
+| D | Account brief render + `atb facts override` | implementer → reviewer | C | ⬜ |
+| E | CRM CSV stub → CRM-sourced facts | implementer → reviewer | C | ⬜ |
+| F | Service layer + local FastAPI web app | architect → implementer → reviewer | D | ⬜ |
+| G | Fill leadership Account Plan template + periodic refresh | architect → implementer → reviewer | Account Plan template | ⏸ waiting |
+| H | Team distribution via M365 Copilot agent | architect | IT answer | ⏸ waiting |
+| H-fb | Cloudflare fallback (D1/R2/Worker + Access), read-only first | architect → implementer → reviewer | IT rejects H + data approval | ⏸ waiting |
 
-Phases 6 and 7 are deliberately deprioritized because of permission-grant risk
-(the same risk that killed a prior Microsoft-transcript-automation project).
-Don't resume building toward them unless explicitly reopened.
+Deprioritized (unchanged): Teams bot via Graph, Salesforce write.
 
-## As of last verification (2026-09-21)
-
-- **Extraction**: 70 documents ok, 1 skipped (empty), 0 errors, out of 71 total.
-- **Tests**: 100 passing, ruff clean.
-- **Embeddings**: unblocked via the org's LLM proxy (`text-embedding-3-small`,
-  native 1536 dims), no local model or new credential needed.
-- **Redaction**: runs at ingest time (before hashing/extraction/embedding), so
-  secrets never reach the DB, the model, or an answer. Verified via a
-  token-masking script — no real secret value ever printed.
-- **QA**: a synthesis-style `atb ask` against a real account returned a clean,
-  well-cited answer with no leaked secrets.
-- **Extraction retries**: forced tool-use is non-deterministic in *how* it
-  fails (not just which docs fail), so `extract_document` retries up to 3
-  times on a missing `tool_use` block or a validation error, billing and
-  logging every attempt.
-
-## Known gap (found while dogfooding, not yet built)
-
-**No way to mark an action item resolved without editing the source note.**
-The bot answered with a stale "Tony owes X" from an outdated note. The schema
-already supports it (`ActionItem.status`: open/done/dropped, already
-annotated into the QA context), but:
-
-1. No CLI command writes to `ActionItem.status` — only extraction and the
-   review queue write `ActionItem` rows. Needs something like
-   `atb action-items list --account X` + `atb action-items resolve <id> --status done`.
-2. Unverified whether the answer-synthesis prompt actually changes its answer
-   based on a `(done)`/`(dropped)` annotation, or just displays it without
-   acting on it. Needs a live before/after `ask` check.
-
-Do this before or interleaved with Phase 5 — it's small and directly affects
-whether the team trusts the bot's day-to-day answers.
-
-## Next up
-
-1. Action-item resolution CLI + verify it changes answers (see gap above).
-2. Phase 5: CSV-stub CRM adapter (`get_account`, `get_contacts`,
-   `get_open_cases`, `get_renewal` reading Salesforce report exports dropped
-   in the intake folder).
-3. Web app front end (FastAPI + minimal chat SPA) — currently only the CLI
-   (`atb ask`) exercises the QA service.
-
-## Where the full design lives
-
-The governing implementation plan (architecture, phasing rationale, cost
-model, verification plan) is `fizzy-gathering-dragonfly.md`, kept outside
-this repo in the user's local Claude plans directory. This file is the
-short-form status snapshot; the plan file is the long-form design doc.
+## Known issues carried forward
+- `Document.occurred_at` is never set → no recency anywhere (Phase B).
+- No way to mark an action item done; unverified whether `(done)` changes answers
+  (Phase B).
+- Contacts duplicate per document; no roles (Phase C).
+- `Meeting` model unused; `resolve/meeting_link.py` not built (Phase C).
+- Embedding cost logged as $0 in IngestLog.
+- Runtime router uses `claude-haiku-4-5` (live-verified through the gateway). If the
+  gateway drops it, set `models.route = "claude-sonnet-5"` in `config.toml`.

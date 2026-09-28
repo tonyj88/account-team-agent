@@ -7,9 +7,9 @@ an unchanged drop folder must add nothing (plan: verification step 1).
 
 This only catches exact re-ingests. Near-duplicate coverage of the same
 meeting from different sources (Terret vs. a teammate's own notes) is a
-separate, deliberate non-goal here -- see resolve/meeting_link.py, which
-links them by (account, date, attendee overlap) instead of hashing them
-together. Collapsing those would throw away the "per Terret" vs. "per
+separate, deliberate non-goal here -- resolve/meeting_link.py (planned,
+docs/PLAN.md Phase C, not yet built) will link them by (account, date,
+attendee overlap) instead of hashing them together. Collapsing those would throw away the "per Terret" vs. "per
 Tony's notes" signal the plan calls out as worth keeping.
 """
 
