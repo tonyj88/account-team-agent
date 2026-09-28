@@ -1,5 +1,6 @@
 # Customer data — never commit. Contains meeting transcripts and contact details.
 data/
+# (includes data/templates/ — the Account Plan template is Confidential; never commit it)
 *.sqlite
 *.sqlite-journal
 *.sqlite-wal
@@ -23,3 +24,6 @@ venv/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Per-machine Claude Code settings
+.claude/settings.local.json
