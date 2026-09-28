@@ -54,6 +54,9 @@ Phase B's final check needs a live run on Tony's laptop (gateway + real data): b
 **Waiting on Tony**
 - Put the blank Account Plan template at `data/templates/account_plan.docx` on the laptop
   (gitignored — it's Confidential; only its field list is in the repo).
+- **Ask the C1 admin (Phase G0):** is "AI tools" / MCP access enabled in C1, which MCP
+  servers are registered (Salesforce? Zendesk? ZoomInfo?), and is Claude Code
+  (enterprise-managed authorization / XAA) allowed? If yes, live pulls replace exports.
 - **Sample exports for Phase G1:** one blank-ish/redacted example of each — Salesforce
   account/opportunity report, Zendesk ticket list, ZoomInfo contact list — so the
   architect can write `config/export_mappings.yaml`. Headers only is enough; keep real

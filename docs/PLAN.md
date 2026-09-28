@@ -122,6 +122,16 @@ Tony has normal access to Salesforce, Zendesk and ZoomInfo (via ConductorOne) an
 export lists from each. ConductorOne itself is access management, not a data source —
 it's the formal route if a read permission is ever missing. Goal: fewest manual steps.
 
+- **G0 — Live pull via C1-governed MCP (if available; check first, replaces manual exports)**:
+  C1 can govern AI-agent access to MCP servers (Salesforce is named as an example) for
+  Claude Code, Claude Desktop, Cursor and Copilot Studio — per-user, short-lived tokens,
+  no stored API keys (docs: c1.ai/docs/product/how-to/connect-mcp-client, ai-tools).
+  Claude Code support is experimental (`CLAUDE_CODE_ENABLE_XAA=1`). If Tony's C1 admin
+  has registered Salesforce / Zendesk / ZoomInfo MCP servers and grants access, a
+  Claude Code session on the laptop pulls each account's data and **saves the response
+  as a snapshot file into `data/drop/exports/`** — so G1's ingest, provenance (cite the
+  snapshot row) and supersession work unchanged, and the Python bot never holds
+  Salesforce credentials. Exports stay the fallback.
 - **G1 — Export connectors** (`ingest/exports/`): one drop folder
   `data/drop/exports/` for CSV/XLSX. Each file is auto-detected by header signature,
   mapped via `config/export_mappings.yaml` (column → field key, so a changed report
@@ -163,6 +173,8 @@ it's the formal route if a read permission is ever missing. Goal: fewest manual 
   in `api/` (OpenAPI surface a Copilot API plugin needs) + minimal local UI.
 
 **Phase H — Team distribution (GATED: IT answer)**
+- C1 also documents connecting **Copilot Studio** to C1-governed tools and publishing
+  that agent to M365 Copilot — one possible Phase H route that reuses the same access.
 - Research with IT which M365 Copilot agent type is allowed: declarative agent over
   SharePoint (just publish Phase D/E files) vs. API plugin (needs hosted Phase J API + auth).
 - Shared intake (email-forward IMAP connector already stubbed in `config.py`) once teammates
