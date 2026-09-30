@@ -37,7 +37,7 @@ create the SharePoint folder** (open item). OneDrive is fine until then.
 1. **Gather order per account:**
    - Salesforce records plus field history.
    - Calendar events in the review window.
-   - Transcripts for the meetings Tony organized.
+   - Transcripts for the meetings Tony attended.
    - Email and Teams chat hits.
    - SharePoint/OneDrive docs.
    - Local notes.
