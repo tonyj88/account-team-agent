@@ -36,20 +36,19 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
 **Branch:** `replan/claude-native`.
 
 **Next tasks**
-1. R0 discovery (main session, read-only): can M365 reach Teams meeting
-   transcripts/recaps and OneNote? Which SharePoint folder stores plans? Confirm C1
-   Salesforce tool names + field-history objects (for as-of dates).
-2. R1 finish: update CLAUDE.md + `.claude/agents/*` invariants to the new design; decide
-   whether to move `src/atb` to `legacy/` or just leave it frozen.
-3. R2 → `atb-architect` (claude-opus-5): design `plan.schema.json` / candidates.json and
-   the reconcile + approval rules; then `atb-implementer` per task.
+1. R1 finish (main session, S5): update CLAUDE.md + `.claude/agents/*` invariants to the
+   new design; guardrail scope now includes M365 write tools (see docs/R0_DISCOVERY.md).
+2. R2 → `atb-architect` (claude-opus-5): design candidates.json / plan.schema.json and
+   the reconcile + approval rules, using R0 findings (SF field history for as-of dates;
+   transcripts only for Tony-organized meetings). Then `atb-implementer` per task.
 
 **Waiting on Tony**
-- Leadership: ARR definition; confirm SharePoint folder as plan store.
+- Leadership: ARR definition.
+- Pick/create the SharePoint (or OneDrive) folder for plans — none exists today (R0).
 - Before R4 live run on Agilent (C1 + M365 reads).
 
 **Last verification**
-- 2026-09-30: docs-only re-plan; no code behavior changed.
+- 2026-09-30: R0 discovery done (docs/R0_DISCOVERY.md): calendar, email, Teams chat, SharePoint ✅; transcripts ✅ only for Tony-organized meetings (others 423); SF field history ✅ via SOQL; OneNote untested.
 
 ## Phase status
 
@@ -57,8 +56,8 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
 |---|---|---|
 | 0–4, A | Old pipeline (ingest, extraction, QA CLI) | ✅ frozen at `v0-pipeline` |
 | B, C, G, H, H-fb, J | Old plan phases | ❌ retired by re-plan |
-| R0 | Connector discovery (M365 transcripts/OneNote, SharePoint folder, C1 tools) | ⬜ next |
-| R1 | Re-plan docs, agents, CLAUDE.md | 🟡 PLAN.md + CHECKPOINT done |
+| R0 | Connector discovery | ✅ docs/R0_DISCOVERY.md |
+| R1 | Re-plan docs, agents, CLAUDE.md | 🟡 next: CLAUDE.md + agents |
 | R2 | plan schema + validate + reconcile + derive | ⬜ |
 | R3 | render docx + evidence + sf_drift + diff | ⬜ |
 | R4 | `/account-plan` skill + C1 allowlist hook; Agilent live run | ⬜ |
