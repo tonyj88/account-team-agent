@@ -36,6 +36,7 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
 **Branch:** `replan/claude-native`.
 
 **Next tasks**
+0. R0b (main session, read-only): probe SuperDuck `core.customers` + health marts and Jira/Confluence for Agilent; confirm sfdc_id join and ACV vs SF contracts.
 1. R1 finish (main session, S5): update CLAUDE.md + `.claude/agents/*` invariants to the
    new design; guardrail scope now includes M365 write tools (see docs/R0_DISCOVERY.md).
 2. R2 → `atb-architect` (claude-opus-5): design candidates.json / plan.schema.json and
@@ -47,7 +48,7 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
   merge a note and a transcript for the same meeting (account + date) into one source.
 
 **Waiting on Tony**
-- Leadership: ARR definition.
+- ~~ARR definition~~ → decided 2026-09-30: SuperDuck ACV, SF contracts as cross-check.
 - Pick/create the SharePoint (or OneDrive) folder for plans — none exists today (R0).
 - Before R4 live run on Agilent (C1 + M365 reads).
 
@@ -61,6 +62,7 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
 | 0–4, A | Old pipeline (ingest, extraction, QA CLI) | ✅ frozen at `v0-pipeline` |
 | B, C, G, H, H-fb, J | Old plan phases | ❌ retired by re-plan |
 | R0 | Connector discovery | ✅ docs/R0_DISCOVERY.md |
+| R0b | Probe SuperDuck + Jira/Confluence | ⬜ next |
 | R1 | Re-plan docs, agents, CLAUDE.md | 🟡 next: CLAUDE.md + agents |
 | R2 | plan schema + validate + reconcile + derive | ⬜ |
 | R3 | render docx + evidence + sf_drift + diff | ⬜ |

@@ -128,6 +128,35 @@ Tests (R2/R3): VTT parsing and filler removal on a synthetic transcript; speaker
 tagging; cache hits and misses; the quote-verbatim check fails on a paraphrased quote;
 an internal-speaker candidate for a customer-belief field gets downgraded.
 
+## Accelerators: use before building (Tony, 2026-09-30)
+- **ARR = SuperDuck `data_product_marts.core.customers.ACV`**, summed across the
+  account's active product rows (`has_active_contract = true` and
+  `is_deleted = false`, matched by `sfdc_id`). SuperDuck's renewal date is used too.
+  - Salesforce contracts (TCV ÷ term) are only a cross-check. If the two differ by
+    more than a set tolerance, the value is `needs_approval` and both appear in the
+    evidence file.
+  - Where `is_deleted` and `has_active_contract` disagree, that is itself a risk
+    signal, not a data error.
+- **Health and adoption come from SuperDuck enterprise marts:**
+  - Tables: `customers_at_risk_scan_inactivity`,
+    `customers_consecutive_scan_decline`, `customer_scan_activity_comparison`,
+    `customers_without_scans`.
+  - These feed Snapshot R/A/G, section 3, risks and churn triggers.
+  - Open findings by severity over time is the value metric for MEDDPICC Metrics.
+  - Limitation: there is no scan-level data for on-prem SCA/Hub customers.
+- **ZoomInfo** (through C1, `list_*` only): company size, funding and reorgs for
+  triggers; contact titles and reporting lines for sections 5 and 6.
+- **Atlassian (Jira/Confluence):** customer feature requests and escalations for
+  section 3 and product-gap risks, if they are tracked there (probed in R0b).
+- **docx skill:** does the Word manipulation. Our `render` shrinks to a field → cell
+  map, the ⚠ markers, and a layout check.
+- **Scheduled tasks:** a weekly `/plan-due` run with an alert when an account is due or
+  a trigger fires. Nothing to host.
+- **Artifacts** (optional, decide before R5): a private approval page instead of the
+  `/plan-review` CLI. Customer data would be hosted on claude.ai.
+- **Not available:** Gong, Gainsight and Zoom are not in the registry, and C1 exposes
+  only Salesforce and ZoomInfo as business apps.
+
 ## Deterministic toolkit (`atb-tools`, the slimmed Python package)
 All pure functions, unit-tested, and none of them call an LLM:
 - `schema/plan.schema.json`: the plan.json contract generated from
@@ -139,7 +168,7 @@ All pure functions, unit-tested, and none of them call an LLM:
   ⇒ `needs_approval`); only a human can set `approved`, which means the value carries
   forward from the baseline or was changed in `/plan-review`; a secret-pattern scan
   reuses `src/atb/redact.py`.
-- `derive`: ARR from contracts, renewal date + cross-check against the open renewal
+- `derive`: ARR = SuperDuck ACV with the Salesforce contract cross-check, renewal date + cross-check against the open renewal
   opp, 30/60/90 bucketing, review-due date, the "renewal in final two quarters" trigger.
 - `render`: fills the template .docx. Generalize `scripts/fill_agilent_plan.py` into a
   heading-located table filler and add a visible ⚠ marker on unapproved values. Also
@@ -171,7 +200,7 @@ All pure functions, unit-tested, and none of them call an LLM:
 | R6 | Team access *without* Claude seats (later): plans + evidence + a per-account "brief.md" published to the SharePoint folder, so teammates' **M365 Copilot** (which already has C1 → Salesforce) can ground on the curated M365-derived content. Revisit Claude seats / querying via Tony later | IT/Copilot check |
 
 ## Open items for Tony
-- Leadership: ARR definition; confirm the SharePoint folder as the plan store.
+- ARR definition: decided (SuperDuck ACV). Still open: the SharePoint folder for the plan store.
 - **Single operator for now (Tony, 2026-09-30):** teammates have no Claude access. Only
   Tony runs the skills, in Claude Code on the laptop, so the local Python toolkit and
   the Obsidian notes both work as they are. Teammates get the published SharePoint
