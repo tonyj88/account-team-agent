@@ -40,7 +40,7 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
    new design; guardrail scope now includes M365 write tools (see docs/R0_DISCOVERY.md).
 2. R2 → `atb-architect` (claude-opus-5): design candidates.json / plan.schema.json and
    the reconcile + approval rules, using R0 findings (SF field history for as-of dates;
-   transcripts only for Tony-organized meetings). Then `atb-implementer` per task.
+   transcripts for any meeting Tony attended; skip locked ones gracefully). Then `atb-implementer` per task.
 
 **Waiting on Tony**
 - Leadership: ARR definition.
@@ -48,7 +48,7 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
 - Before R4 live run on Agilent (C1 + M365 reads).
 
 **Last verification**
-- 2026-09-30: R0 discovery done (docs/R0_DISCOVERY.md): calendar, email, Teams chat, SharePoint ✅; transcripts ✅ only for Tony-organized meetings (others 423); SF field history ✅ via SOQL; OneNote untested.
+- 2026-09-30: R0 discovery done (docs/R0_DISCOVERY.md): calendar, email, Teams chat, SharePoint ✅; transcripts ✅ for meetings Tony attended (incl. others' — one series 423-locked at organizer storage); SF field history ✅ via SOQL; OneNote untested.
 
 ## Phase status
 

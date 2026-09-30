@@ -7,7 +7,7 @@ No customer data is recorded here.
 | Source | Result | How |
 |---|---|---|
 | Calendar | ✅ | `outlook_calendar_search` (query = account name, `order: newest`) → attendees, dates, organizer |
-| **Teams transcripts** | ✅ **for meetings Tony organizes** · ❌ others' meetings | Read the event (`read_resource calendar:///…`) → its `meetingTranscriptUrl` → `read_resource` returns WEBVTT with speakers + timestamps (~50 KB/hr). On a recurring series organized by someone else, Graph lists the transcript but returns **HTTP 423 Locked**, and some occurrences have no transcript at all. |
+| **Teams transcripts** | ✅ for meetings Tony attended, whoever organized them · ⚠ one series was blocked | Read the event (`read_resource calendar:///…`) → its `meetingTranscriptUrl` → `read_resource` returns WEBVTT with speakers + timestamps (~50 KB/hr). Tested: a meeting Tony organized ✅; a meeting a colleague organized ✅ (the series read returned every transcript in the series). One recurring series returned **HTTP 423 "Access to this site has been blocked"**. That's a lock on that organizer's storage (an admin/retention lock, or the account is deprovisioned), not an attendee restriction. Read the series URL **without** `start/end` and match the occurrence yourself by the transcript's `createdDateTime`: the occurrence-window query missed a transcript that existed. |
 | Teams chats + channels | ✅ | `chat_message_search` (KQL, date filter) → message text, sender, date, webUrl |
 | Outlook email | ✅ | `outlook_email_search` + `read_resource mail:///…`; relevance-ranked, so sort by date yourself |
 | SharePoint / OneDrive files | ✅ | `sharepoint_search` (content/filename, fileType, folder) + `read_resource file:///…` (docx → text) |
@@ -42,7 +42,7 @@ create the SharePoint folder** (open item). OneDrive is fine until then.
    - SharePoint/OneDrive docs.
    - Local notes.
    - The baseline plan.
-2. **Missing transcripts** (423 or none recorded) are recorded as "no transcript", not
+2. **Missing transcripts** (423-locked organizer storage, or none recorded) are recorded as "no transcript", not
    treated as an error. The meeting still counts as dated evidence of contact, from the
    calendar.
 3. **Transcripts are large** (~50 KB/hr). The skill pulls candidate quotes from them;
