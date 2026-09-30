@@ -18,6 +18,16 @@ Salesforce through C1, read the notes and filled the real template. Tony's decis
   small deterministic toolkit.
 - **Note sources:** local Markdown/Obsidian, Teams transcripts/recaps, Outlook email,
   SharePoint/OneNote. All four count.
+- **Transcripts replace manual recap copying (Tony, 2026-09-30):** R0 showed the skill
+  can read transcripts for any meeting Tony attended.
+  - Obsidian becomes Tony's *side notes*: his own observations and context typed during
+    or after a meeting.
+  - Older Obsidian notes may hold pasted recaps. When a note and a transcript cover the
+    same meeting (same account, same date), reconcile treats them as **one meeting**,
+    not two sources that independently confirm each other. The transcript is the
+    primary text to quote.
+  - A side note's date ties it to that day's meeting, so its quotes sit next to the
+    transcript's in the evidence file.
 - **Plan store:** a versioned .docx plus an evidence file in a team SharePoint folder.
   The latest approved plan is the baseline for the next refresh. Tony uploads to
   Salesforce by hand.

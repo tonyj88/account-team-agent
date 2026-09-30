@@ -42,6 +42,9 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
    the reconcile + approval rules, using R0 findings (SF field history for as-of dates;
    transcripts for any meeting Tony attended; skip locked ones gracefully). Then `atb-implementer` per task.
 
+- R2 design input: Obsidian = side notes only (no more pasted recaps); reconcile must
+  merge a note and a transcript for the same meeting (account + date) into one source.
+
 **Waiting on Tony**
 - Leadership: ARR definition.
 - Pick/create the SharePoint (or OneDrive) folder for plans — none exists today (R0).
