@@ -47,7 +47,6 @@ template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
   merge a note and a transcript for the same meeting (account + date) into one source.
 
 **Waiting on Tony**
-- **Confirm ARR source:** SuperDuck ACV is NULL for all external customers (pipeline gap), so the plan now uses Salesforce `Account.ACV_Current__c`. OK? Report the SuperDuck gap to the data team?
 - Pick/create the SharePoint (or OneDrive) folder for plans — none exists today (R0).
 - Before R4 live run on Agilent (C1 + M365 reads).
 

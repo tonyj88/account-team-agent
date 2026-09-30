@@ -88,8 +88,8 @@ was said in a meeting or an email. So:
   - The evidence file shows both values with their dates.
   - The value is listed in a **"Salesforce drift" report** (`<acct>_sf_drift.md`) so
     Tony can update Salesforce by hand. The bot still never writes to Salesforce.
-- **Contractual and system-of-record fields** (contract end date, contract amount/TCV,
-  products purchased) are different. A conversation can only *flag* them ("customer
+- **Contractual and system-of-record fields** (ACV/ARR, contract end date, contract
+  amount/TCV, products purchased) are different. A conversation can only *flag* them ("customer
   says renewal moves to Q2"), not replace them. The plan shows the Salesforce value
   plus the flagged change, marked ⚠.
 - **Where the rule lives:** the `validate`/`reconcile` code applies it
@@ -129,13 +129,15 @@ tagging; cache hits and misses; the quote-verbatim check fails on a paraphrased 
 an internal-speaker candidate for a customer-belief field gets downgraded.
 
 ## Accelerators: use before building (Tony, 2026-09-30)
-- **ARR = Salesforce `Account.ACV_Current__c`** (revised after R0b; Tony to confirm).
-  - SuperDuck `core.customers.ACV` was the first choice, but it is NULL for every
-    external customer today, which is a pipeline gap.
-  - Cross-checks: SuperDuck `next_renewal_date` against the Salesforce contract end
-    dates, and contract TCV ÷ term (rough, because terms overlap).
-  - A mismatch, or no recent Account edit, ⇒ `needs_approval`.
-  - Switch back to SuperDuck ACV if the data team fixes it.
+- **ARR = Salesforce `Account.ACV_Current__c`** (confirmed by Tony, 2026-09-30).
+  - Commercial fields in Salesforce are reliable. Contacts and notes are the fields
+    that go stale.
+  - ACV/ARR is treated as a **system-of-record field**: it is trusted without
+    needing approval just because its as-of date is weak. A conversation can only
+    *flag* a change to it, never replace it.
+  - Cross-checks (flag only): the SuperDuck renewal date against the Salesforce
+    contract end dates.
+  - SuperDuck ACV is not used, and nobody needs to be told about the gap.
 - **Health and adoption:** compute from SuperDuck `core.scans` (joined via
   `sfdc_id`), because the enterprise marts below miss accounts with NULL ACV. They
   stay useful for checking a portfolio-wide at-risk list:
