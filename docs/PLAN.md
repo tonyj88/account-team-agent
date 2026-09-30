@@ -96,6 +96,38 @@ was said in a meeting or an email. So:
   deterministically from the dated evidence the skill collects. The skill's job is to
   gather candidate values with dates and quotes, not to decide which one wins.
 
+## Transcript handling: filtering out the noise (Tony, 2026-09-30)
+Transcripts cover the whole meeting (~12k tokens/hr). The skill **extracts evidence for
+each plan field; it never summarizes the meeting.**
+1. **Preprocess (deterministic, `atb-tools transcript clean`):** parse the WEBVTT; drop
+   filler turns (short acknowledgements, greetings); merge consecutive turns by the same
+   speaker; tag each speaker `customer` or `internal`, using the Teams org label (e.g.
+   "(Agilent USA)") or the email domain from the calendar attendees; keep timestamps.
+   Save the cleaned text, because it is what `validate` checks quotes against.
+2. **Extract by field (Claude, in the skill):**
+   - Input is the cleaned transcript plus the field catalog: MEDDPICC elements,
+     stakeholders/roles, risks, actions (owner + due date), competition, commercial
+     terms, and trigger events.
+   - Output is a list of candidates: field, value, verbatim quote, timestamp, speaker,
+     speaker side and confidence.
+   - Anything that maps to no field (small talk, demo narration, scheduling chatter) is
+     dropped.
+3. **Speaker weighting (in reconcile code):** customer statements are the evidence for
+   pain, metrics, decision criteria, decision process and competition. Internal
+   statements are the evidence for our commitments and actions. Internal pitch or
+   opinion is never evidence of what the customer believes, so such candidates are
+   capped at low confidence and flagged `needs_approval`.
+4. **Cache:** candidates are stored per transcript ID
+   (`data/cache/transcripts/<id>.json`, gitignored). A refresh only extracts transcripts
+   newer than the baseline plan, or ones not in the cache yet.
+5. **Checks:** every quote must appear verbatim in the cleaned transcript, and its
+   timestamp must fall inside the meeting. The evidence file shows the meeting, the
+   timestamp and the speaker for each quote.
+
+Tests (R2/R3): VTT parsing and filler removal on a synthetic transcript; speaker-side
+tagging; cache hits and misses; the quote-verbatim check fails on a paraphrased quote;
+an internal-speaker candidate for a customer-belief field gets downgraded.
+
 ## Deterministic toolkit (`atb-tools`, the slimmed Python package)
 All pure functions, unit-tested, and none of them call an LLM:
 - `schema/plan.schema.json`: the plan.json contract generated from
