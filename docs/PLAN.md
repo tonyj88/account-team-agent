@@ -129,15 +129,16 @@ tagging; cache hits and misses; the quote-verbatim check fails on a paraphrased 
 an internal-speaker candidate for a customer-belief field gets downgraded.
 
 ## Accelerators: use before building (Tony, 2026-09-30)
-- **ARR = SuperDuck `data_product_marts.core.customers.ACV`**, summed across the
-  account's active product rows (`has_active_contract = true` and
-  `is_deleted = false`, matched by `sfdc_id`). SuperDuck's renewal date is used too.
-  - Salesforce contracts (TCV ÷ term) are only a cross-check. If the two differ by
-    more than a set tolerance, the value is `needs_approval` and both appear in the
-    evidence file.
-  - Where `is_deleted` and `has_active_contract` disagree, that is itself a risk
-    signal, not a data error.
-- **Health and adoption come from SuperDuck enterprise marts:**
+- **ARR = Salesforce `Account.ACV_Current__c`** (revised after R0b; Tony to confirm).
+  - SuperDuck `core.customers.ACV` was the first choice, but it is NULL for every
+    external customer today, which is a pipeline gap.
+  - Cross-checks: SuperDuck `next_renewal_date` against the Salesforce contract end
+    dates, and contract TCV ÷ term (rough, because terms overlap).
+  - A mismatch, or no recent Account edit, ⇒ `needs_approval`.
+  - Switch back to SuperDuck ACV if the data team fixes it.
+- **Health and adoption:** compute from SuperDuck `core.scans` (joined via
+  `sfdc_id`), because the enterprise marts below miss accounts with NULL ACV. They
+  stay useful for checking a portfolio-wide at-risk list:
   - Tables: `customers_at_risk_scan_inactivity`,
     `customers_consecutive_scan_decline`, `customer_scan_activity_comparison`,
     `customers_without_scans`.
@@ -168,7 +169,7 @@ All pure functions, unit-tested, and none of them call an LLM:
   ⇒ `needs_approval`); only a human can set `approved`, which means the value carries
   forward from the baseline or was changed in `/plan-review`; a secret-pattern scan
   reuses `src/atb/redact.py`.
-- `derive`: ARR = SuperDuck ACV with the Salesforce contract cross-check, renewal date + cross-check against the open renewal
+- `derive`: ARR = Salesforce ACV_Current__c with cross-checks; scan-activity health from core.scans; renewal date + cross-check against the open renewal
   opp, 30/60/90 bucketing, review-due date, the "renewal in final two quarters" trigger.
 - `render`: fills the template .docx. Generalize `scripts/fill_agilent_plan.py` into a
   heading-located table filler and add a visible ⚠ marker on unapproved values. Also

@@ -49,3 +49,44 @@ create the SharePoint folder** (open item). OneDrive is fine until then.
    `validate` checks each quote verbatim against the saved transcript text.
 4. **Redaction still applies:** chats and invites contain meeting passcodes and system
    details, so the secret scan runs over everything the skill saves.
+
+# R0b — SuperDuck + Atlassian (2026-09-30)
+
+## SuperDuck (Black Duck data products)
+- **Join works:** `core.customers.sfdc_id` = the Salesforce Account Id (18-char). There's
+  one row per product (polaris, continuous_dynamic, sca_phonehome), plus
+  `next_renewal_date` and `has_active_contract`.
+- **ACV is unusable right now:** `ACV` is NULL for **all** external rows (3,912/3,912).
+  The table docs say external customers should show 0.0 or a value, so this is a
+  pipeline gap, not something specific to Agilent. Report it to the data team.
+- **Health marts miss the test account:** `customer_scan_activity_comparison`,
+  `customers_at_risk_scan_inactivity` and `customers_consecutive_scan_decline` return no
+  rows for it. These marts are ordered/filtered by ACV, so the NULL ACV probably
+  excludes the account. Unconfirmed.
+- **Raw scan data is rich and current:** `core.scans` joined through `customer_id`
+  gives scan counts and last-scan dates for each product and tool type (DAST, SAST,
+  SCA, BLA). → Compute health signals (recent vs. baseline activity, days since last
+  scan) **ourselves from `core.scans`**, which is deterministic and needs little code.
+  Don't depend on the ACV-ordered marts.
+- `next_renewal_date` matched a Salesforce contract end date exactly, which makes it
+  a good cross-check.
+
+## Salesforce ACV (replacement ARR source)
+- `Account.ACV_Current__c` exists and is populated for the test account. There's also
+  `ACV_Pipeline__c` and `ACV_of_Largest_Renewal_of_the_Year__c`.
+- **No field history** is tracked for `ACV_Current__c`. Its as-of date is therefore the
+  Account's `LastModifiedDate`, which is a weak signal (any edit updates it).
+- The Account has several active Contracts with overlapping terms (11, 12 and
+  36 months). That makes a TCV ÷ term calculation error-prone, so it's only a
+  cross-check.
+
+## Atlassian (Rovo search)
+- Confluence has real per-account content: a TPM space page with the account's
+  Salesforce Id, older meeting notes, services notes (pricing and partner risks), and
+  a product-planning page that lists the account against specific feature requests.
+  → This is a good source for **section 3 (ERs / feature requests)** and for risks.
+- Rovo search is fuzzy. A plain "Agilent" search also returned unrelated Jira issues
+  ("Agile ..."). Use CQL/JQL with exact phrases when building. **Each Rovo search can
+  cost up to 10 Rovo credits**, so prefer CQL (`searchConfluenceUsingCql`) in the skill.
+- Jira wasn't probed with JQL yet. Do it during R4 when the skill's gather step is
+  built.
