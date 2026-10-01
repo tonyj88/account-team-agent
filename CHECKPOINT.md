@@ -6,26 +6,27 @@ Short status snapshot. Design lives in [docs/PLAN.md](docs/PLAN.md); session wor
 [CLAUDE.md](CLAUDE.md). Update this file at the end of every session that changes what's
 built or what's next — it is the source of truth for "where are we", not chat history.
 
-## Model guide
+## Model guide (Claude Enterprise, updated 2026-09-30)
 
-Only `claude-opus-5` and `claude-sonnet-5` are available (company LLM gateway).
-**Default is Sonnet 5.** Use Opus 5 only for the rows marked below.
+**Start each new session on the model listed for the next milestone.** Don't switch
+models partway through a session: the prompt cache is per model, so the new model
+rereads the whole context uncached. Get savings with Sonnet subagents (fresh, small
+context) and fresh sessions that resume from this file.
 
-| Work | Model | How |
-|---|---|---|
-| Running the session (orchestrating, committing, updating this file) | **claude-sonnet-5** | Start Claude Code on Sonnet 5 unless the next Handoff step says Opus 5 |
-| Implementing a task (code + tests) | **claude-sonnet-5** | `atb-implementer` |
-| Per-task review before each commit | **claude-sonnet-5** | `atb-reviewer` |
-| Codebase search | **claude-sonnet-5** | `atb-explorer` |
-| Designing a phase: schema, `fields.yaml`, fact lifecycle rules | **claude-opus-5** | `atb-architect` |
-| Writing or changing an LLM prompt / extraction schema | **claude-opus-5** | `atb-architect` designs it; implementer (Sonnet 5) wires it in |
-| Debugging bad extraction or answer quality on real notes | **claude-opus-5** | Opus 5 main session |
-| Mapping the Account Plan template to fields (Phase G) | **claude-opus-5** | `atb-architect` |
-| End-of-phase review before merge | **claude-opus-5** | `atb-phase-reviewer` |
-| Optional final PR review | Claude Code cloud session | Ask on the phase PR |
+| Milestone | Start session on | Subagents | Why |
+|---|---|---|---|
+| **R1** Docs/agents/CLAUDE.md update, model pins | **Sonnet 5.5** | none needed | Mechanical edits |
+| **R2** design (plan schema, candidates.json, reconcile/freshness/approval, speaker weighting) | **Opus 5.5** | `atb-architect` | Design errors spread everywhere |
+| **R2** build (validate, derive, reconcile, transcript clean + tests) | **Sonnet 5.5** | implementer → reviewer | Well-specified code |
+| **R3** render (docx skill + field→cell map), evidence, sf_drift, diff | **Sonnet 5.5** | implementer → reviewer | Wiring |
+| **R4** `/account-plan` skill prompts + live Agilent run | **Opus 5.5** | reviewer (Sonnet) | Prompt and extraction quality on messy data |
+| **R5** `/plan-review`, `/plan-due`, scheduled task | **Sonnet 5.5** | implementer → reviewer | Wiring |
+| **R6** SharePoint publish for teammates' Copilot | **Sonnet 5.5** | — | Later |
+| End-of-phase review (after R2–R3, after R4–R5) | **Opus 5.5** | `atb-phase-reviewer` | Cross-task issues |
 
-Small, mechanical phases (D, E) may skip the architect and go straight to implementer
-tasks written by the Sonnet 5 main session; they still end with `atb-phase-reviewer`.
+R1 must update the model IDs in `.claude/agents/*.md` and CLAUDE.md from
+`claude-opus-5`/`claude-sonnet-5` (old gateway) to `claude-opus-5-5`/`claude-sonnet-5-5`.
+First confirm that Sonnet 5.5 is available on the Enterprise plan.
 
 ## Handoff
 
@@ -33,12 +34,12 @@ tasks written by the Sonnet 5 main session; they still end with `atb-phase-revie
 gathers from C1/Salesforce + M365 + local notes; a small deterministic Python toolkit
 reconciles (newest dated evidence wins; SF drift report), validates, and fills the
 template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
-**Branch:** `replan/claude-native`.
+**Branch:** `master` (re-plan merged). Create a branch per milestone, e.g. `r1/docs-agents`.
 
 **Next tasks**
-1. R1 finish (main session, S5): update CLAUDE.md + `.claude/agents/*` invariants to the
+1. **R1** — start on **Sonnet 5.5**: update CLAUDE.md + `.claude/agents/*` invariants to the
    new design; guardrail scope now includes M365 write tools (see docs/R0_DISCOVERY.md).
-2. R2 → `atb-architect` (claude-opus-5): design candidates.json / plan.schema.json and
+2. **R2** — start on **Opus 5.5**, `atb-architect`: design candidates.json / plan.schema.json and
    the reconcile + approval rules, using R0 findings (SF field history for as-of dates;
    transcripts for any meeting Tony attended; skip locked ones gracefully). Then `atb-implementer` per task.
 
