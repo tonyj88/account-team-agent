@@ -49,6 +49,9 @@ exists, its `plan.json` is the baseline.
    day cover the same meeting; quote the transcript and use the note for Tony's own
    observations.
 
+Before quoting from any saved file, run `uv run atb-tools redact $RUN/sources/*` to strip
+meeting passcodes and other secrets in place. `validate` fails if a secret is left.
+
 ## 3. Write `candidates.json`
 Schema: `src/atb/plan.py` (`Candidates`). Emit **every** candidate you find, including
 older and conflicting ones: reconcile needs them to apply the freshness rule and to write

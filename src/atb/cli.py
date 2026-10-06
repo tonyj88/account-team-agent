@@ -12,6 +12,7 @@ from atb.derive import growth_gap, next_review, parse_date, parse_usd
 from atb.diff import diff_markdown, diff_plans
 from atb.plan import Candidates, Evidence, Plan, PlanValue
 from atb.reconcile import drift_markdown, reconcile
+from atb.redact import redact_text
 from atb.render import evidence_markdown, render_docx
 from atb.transcript import clean_vtt, to_text
 from atb.validate import validate
@@ -105,6 +106,16 @@ def cmd_transcript_clean(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_redact(args: argparse.Namespace) -> int:
+    for name in args.files:
+        path = Path(name)
+        result = redact_text(path.read_text(encoding="utf-8"))
+        if result.count:
+            path.write_text(result.text, encoding="utf-8")
+        print(f"{name}: {result.count} redactions")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="atb-tools", description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -138,6 +149,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--internal-domain", action="append", default=[])
     p.add_argument("--internal-org", action="append", default=[])
     p.set_defaults(func=cmd_transcript_clean)
+
+    p = sub.add_parser("redact", help="remove secrets from saved source files, in place")
+    p.add_argument("files", nargs="+")
+    p.set_defaults(func=cmd_redact)
     return parser
 
 
