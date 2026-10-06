@@ -1,56 +1,80 @@
 # CLAUDE.md
 
-Account Team Bot: turns meeting notes into cited, per-account facts to keep leadership's
-Account Plan current and answer team questions. Design: `docs/PLAN.md`. Status and next
-steps: `CHECKPOINT.md`.
+Account Team Bot fills leadership's Account Plan for one account from cited, dated
+evidence. The `/account-plan` skill gathers the evidence, and the `atb-tools` Python
+toolkit decides each value. Design: `docs/PLAN.md`. Status and next steps:
+`CHECKPOINT.md`.
 
 ## Start of every session
-1. Read `CHECKPOINT.md` — the **Handoff** section says what's next and which subagent
-   does it.
-2. Read only the `docs/PLAN.md` phase you're working on.
 
-## Models (company LLM gateway)
-Only **claude-opus-5** and **claude-sonnet-5** are available for building. Default to
-Sonnet 5; use Opus 5 only where `CHECKPOINT.md` → **Model guide** says so (phase design,
-end-of-phase review, prompt/extraction-quality debugging).
-- Main session: `claude-sonnet-5` for build work. Start the session on `claude-opus-5`
-  only when the Handoff's next step is tagged Opus 5.
-- Subagents are pinned in `.claude/agents/*.md` with explicit model IDs. Don't use the
-  `opus`/`sonnet`/`haiku` aliases or the built-in general-purpose agent with an unpinned
-  model — they may resolve to models the gateway doesn't serve.
+1. Read `CHECKPOINT.md`. Its **Next steps** section says what to do and on which model.
+2. Read only the part of `docs/PLAN.md` that the task touches.
+
+## Invariants
+
+Every change keeps these. Reviewers check them.
+
+- **Claude gathers, code decides.** The skill proposes candidate values. Only `reconcile`
+  picks winners and sets status. Code under `src/atb/` makes no LLM or network calls.
+- **Provenance.** Every non-empty plan value cites a Salesforce `Object/Id/Field` or a
+  saved text file with a verbatim quote. `validate` enforces this.
+- **Freshness.** A human decision wins. Otherwise the newest dated evidence wins. Fields
+  marked `system_of_record` in `config/account_plan_fields.yaml` keep the Salesforce
+  value, and newer evidence only flags them. Older values stay in `history`.
+- **Only a human approves.** Values from `llm_draft`, and fields whose catalog entry says
+  `needs_approval`, are never `auto`.
+- **Read-only connectors.** Never weaken `.claude/hooks/write_guard.py`. Never write to
+  Salesforce or ZoomInfo. Never send email or Teams messages.
+- **No secrets in saved sources.** Run `atb-tools redact` over saved sources. `validate`
+  fails on any secret it finds.
+- **Field keys come from the catalog.** Look keys up in
+  `config/account_plan_fields.yaml` through `atb.catalog`. Don't hard-code them.
+- **Synthetic test data only.** Tests use made-up names and a synthetic .docx, never the
+  real template or customer data.
+
+## Models
+
+Only `claude-opus-5` and `claude-sonnet-5` are available on the company gateway. Use
+Sonnet 5 by default. Use Opus 5 for design, prompt work in the skill, and end-of-phase
+review. Subagents in `.claude/agents/*.md` pin explicit model IDs. Don't use the
+`opus`, `sonnet`, or `haiku` aliases, because they may resolve to models the gateway
+doesn't serve.
 
 ## Subagents
+
 | Agent | Model | When |
 |---|---|---|
-| `atb-architect` | claude-opus-5 | Start of a new phase, or a task too vague to build. Returns a task list. |
-| `atb-implementer` | claude-sonnet-5 | One task at a time from the Handoff list. Code + tests. |
+| `atb-architect` | claude-opus-5 | A task too vague to build. Returns a task list. |
+| `atb-implementer` | claude-sonnet-5 | One task: code and tests. |
 | `atb-reviewer` | claude-sonnet-5 | After every implementer run, before every commit. |
-| `atb-phase-reviewer` | claude-opus-5 | Once per phase, after all its tasks are committed, before merge. |
+| `atb-phase-reviewer` | claude-opus-5 | Once a milestone's tasks are committed, before merge. |
 | `atb-explorer` | claude-sonnet-5 | Finding where something lives in the code. |
 
+Bounded build tasks can also go to Codex through the `codex-delegate` skill. Review its
+output against the invariants above before you commit it.
+
 ## Standard loop
-1. New phase? → `atb-architect`; paste its task list into CHECKPOINT Handoff, each task
-   tagged with agent + model.
-2. For each task → `atb-implementer`. Run tasks in parallel only if the Handoff marks
-   them as touching different files.
-3. → `atb-reviewer` on the diff. Fix findings (another implementer run) until "ship".
-4. Main session commits (one commit per task), then updates CHECKPOINT: phase table,
-   Handoff, last verification.
-5. Phase's tasks all done → `atb-phase-reviewer`; fix its findings, then push and open
-   (or update) the phase PR. Optionally ask a Claude Code cloud session for a final
-   review on the PR before merging.
-6. Ask Tony before anything in "Waiting on Tony", before live LLM runs that re-extract
-   everything (cost), and before any outward-facing deploy.
+
+1. Take the next task from `CHECKPOINT.md`.
+2. Build it with `atb-implementer` or Codex. Run tasks in parallel only when they touch
+   different files.
+3. Review the diff with `atb-reviewer`. Fix findings until the verdict is "ship".
+4. Commit one task per commit. Update `CHECKPOINT.md`.
+5. When a milestone is done, run `atb-phase-reviewer`, fix its findings, then push and
+   open or update the PR.
+6. Ask Tony before anything under **Waiting on Tony**, before a live run on customer
+   data, and before anything is uploaded or shared.
 
 ## Commands
+
 ```bash
 uv sync --all-extras
 uv run pytest
 uv run ruff check
-uv run atb --help
+uv run atb-tools --help
 ```
 
 ## Never
-- Commit `data/`, `*.sqlite*`, or `config.toml` (customer data and credentials).
-- Print real secret values while debugging redaction — mask them.
-- Break the invariants listed in `.claude/agents/atb-reviewer.md`.
+
+- Commit `data/`, `config.toml`, or the Account Plan template.
+- Print a real secret while debugging redaction. Mask it.

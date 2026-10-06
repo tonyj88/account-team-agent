@@ -5,13 +5,11 @@
 # extraction, rendering and approval can be driven from config.
 #
 # Per field:
-#   key       stable id used in AccountFact.field_key / row tables
+#   key       stable id used in candidates.json and plan.json
 #   label     the label as printed in the template
 #   source    where the value comes from:
-#               crm        Salesforce via C1 MCP snapshot (Phase G0/G1; exports are the fallback)
-#               zoominfo   ZoomInfo contact/company export (Phase G1)
-#               copilot_draft  cell read from a Copilot-filled copy of this template
-#                          (Phase G2); never cited, ALWAYS needs approval, any field
+#               crm        Salesforce, read through the C1 connector
+#               zoominfo   ZoomInfo through C1 (parked)
 #               note       extracted from meeting notes, verbatim-quote evidence required
 #               derived    computed from other fields/rows
 #               human      only a person can supply it
@@ -21,6 +19,7 @@
 #               auto            accepted unless low-confidence / conflicting / stale
 #               needs_approval  always needs a human to approve
 #   alt_sources  other sources that can also supply the field
+#   system_of_record  true = only Salesforce sets the value; other sources can only flag a change
 #   mvp       true = filled in the first usable version (Tony, 2026-09-28)
 #
 # Rows (`kind: rows`) are repeating tables; `columns` follow the same fields.
@@ -52,8 +51,8 @@ sections:
       - {key: snapshot.segment_geo, label: "Segment / Geo", source: crm, alt_sources: [zoominfo], approval: auto}
       - {key: snapshot.industry, label: "Industry", source: crm, alt_sources: [zoominfo], approval: auto}
       - {key: snapshot.fiscal_year, label: "Fiscal Year", source: crm, approval: auto}
-      - {key: snapshot.current_arr, label: "Current ARR", source: derived, approval: needs_approval, derived_from: [crm.contract.total_value, crm.contract.term_months], note: "Salesforce has no ARR field; Amount is TCV. Annualize active contract(s) in code; needs approval until leadership confirms the ARR definition."}
-      - {key: snapshot.renewal_dates, label: "Renewal Date(s)", source: crm, approval: auto, note: "Active contract end date; cross-check open renewal opportunity; mismatch => needs_approval."}
+      - {key: snapshot.current_arr, label: "Current ARR", source: crm, approval: auto, system_of_record: true, note: "Salesforce Account.ACV_Current__c (Tony, 2026-10-06). No field history; as-of date is the Account LastModifiedDate. A conversation can only flag a change."}
+      - {key: snapshot.renewal_dates, label: "Renewal Date(s)", source: crm, approval: auto, system_of_record: true, note: "Active contract end date; cross-check open renewal opportunity; mismatch => needs_approval."}
       - {key: snapshot.health_rag, label: "Health (R/A/G)", source: llm_draft, approval: needs_approval}
       - {key: snapshot.target_arr_fy, label: "Target ARR (FY)", source: human, approval: auto}
       - {key: snapshot.growth_gap_usd, label: "Growth $ Gap", source: derived, approval: auto, derived_from: [snapshot.target_arr_fy, snapshot.current_arr]}
@@ -185,7 +184,7 @@ sections:
     title: "30 / 60 / 90-Day Action Plan"
     mvp: true
     kind: rows
-    note: "Bucket by due date. Rule from the template: every Amber in Section 4 should appear in the 30-day bucket — the renderer flags any that don't."
+    note: "Bucket by due date (atb.derive.action_bucket). Rule from the template: every Amber in Section 4 should appear in the 30-day bucket. Not checked yet."
     buckets:
       - {key: d30, label: "Next 30 days — close the biggest qualification gap"}
       - {key: d60, label: "By 60 days — advance the decision process"}
@@ -205,7 +204,7 @@ sections:
       - {key: ask.needs_from_management, label: "What I need from management / the business", source: human, approval: auto}
 
 # From the template appendix: update the plan within 5 business days when any of these
-# happen. Extraction flags them (Phase F); renewal_final_two_quarters comes from CRM dates.
+# happen. Not detected yet (parked); atb.derive.renewal_in_final_two_quarters covers the renewal trigger.
 trigger_events:
   - {key: champion_or_eb_change, label: "Champion or economic buyer leaves, or changes role", source: note, alt_sources: [zoominfo]}
   - {key: corporate_event, label: "Reorganisation, acquisition, divestment or funding event", source: note, alt_sources: [zoominfo]}

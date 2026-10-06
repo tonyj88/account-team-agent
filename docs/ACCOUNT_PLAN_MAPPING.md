@@ -1,52 +1,55 @@
-# Account Plan → data sources
+# Account Plan sections and their sources
 
-How each section of the leadership Account Plan template (Sep 2026) gets filled. The
-template itself is Confidential and is not in this repo: keep it at
-`data/templates/account_plan.docx` on the laptop (gitignored). The machine-readable field
-list is `config/account_plan_fields.yaml`.
+This page lists where each section of the leadership Account Plan template (Sep 2026)
+gets its values. The template is Confidential and isn't in this repo. Keep it at
+`data/templates/account_plan.docx` on the laptop. The machine-readable field list, with
+each field's label, source, and approval rule, is `config/account_plan_fields.yaml`.
 
-## Rules (Tony, 2026-09-28)
-- **MVP sections:** 1 Snapshot, 4 MEDDPICC, 5 Stakeholders, 10 Risks, 11 30/60/90
-  Actions, plus trigger-event alerts. Other sections render blank until Phase I.
-- **Low confidence ⇒ human approval.** A value is marked `⚠ needs approval` when any of:
-  confidence below threshold; it's an LLM judgement (R/A/G, position, thesis, the ask);
-  sources disagree; the only evidence is older than the review cycle. Only a human sets
-  `approved`.
-- **Citations go in a separate evidence file** next to the plan, not inside the .docx.
-- **Structured sources (2026-09-28):** live Salesforce via C1-governed MCP, pulled by a
-  Claude Code skill into JSON snapshots (proven working), plus ZoomInfo the same way
-  (confirmed available). Zendesk is out of scope (internal IT tickets only). CSV exports and Copilot-filled drafts are fallbacks. Until G0/G1
-  land, CRM fields are entered with `atb plan set`.
-- **ARR is derived, not stored:** Salesforce Amount is total contract value, so Current
-  ARR is computed from the active contract and needs approval until leadership confirms
-  the definition.
+## Scope
+
+- **Filled now:** the header, 1 Snapshot, 4 MEDDPICC, 5 Stakeholders, 10 Risks, and
+  11 30/60/90 Actions.
+- **Blank for now:** 2, 3, 6, 7, 8, 9, and 12.
 
 ## Section map
 
-| # | Section | Source | Automation | Notes |
-|---|---|---|---|---|
-| — | Header: Exec Sponsor, Status R/A/G | notes / draft | partial | Status always needs approval |
-| 1 | Snapshot | Salesforce via C1 (industry/segment also ZoomInfo); dates by bot | high (Salesforce proven) | Target ARR, Reviewed With = human; Health R/A/G = draft; Growth gap and Next Review are computed |
-| 2 | Account Strategy | CRM "today"; human future | low | Thesis + must-win plays are drafts |
-| 3 | Where We Are Today | Salesforce assets/contracts/products + Salesforce Cases (customer support, confirmed) + notes | medium | Usage/telemetry still has no source |
-| 4 | MEDDPICC | notes | **high** | Evidence = cited quotes; R/A/G = draft |
-| 5 | Stakeholder Map | notes + Salesforce Contacts / Opportunity Contact Roles + ZoomInfo titles; last/next touch from Salesforce Tasks/Events | high | Needs contact merge; MEDDPICC role + position need approval |
-| 6 | Org Chart & Coverage | ZoomInfo reporting lines + human | medium | Tiers/codes need approval; bot lists Tier 1/2 gaps ("?" = open risk) |
-| 7 | Competition | notes; drafts | medium | Who/footprint extracted; counter-position + trap question drafted |
-| 8 | Channel & Partners | notes | medium | Influence + alignment need approval |
-| 9 | Opportunities | Salesforce via C1 + notes | high (Salesforce proven) | Next action from action items |
-| 10 | Risks & Blockers | notes + escalated Salesforce Cases | high | Extraction adds mitigation, owner, by-when |
-| 11 | 30/60/90 Actions | notes | high | Bucketed by due date; flag Section 4 ambers with no 30-day action |
-| 12 | The Ask | human / draft | low | |
-| App. | Refresh cadence + trigger events | ARR + notes | high | ≥$150k quarterly, else semiannual; trigger ⇒ update within 5 business days |
+| # | Section | Source | Notes |
+|---|---|---|---|
+| H | Header: Exec Sponsor, Status R/A/G | Notes, Claude draft | Status always needs approval. |
+| 1 | Snapshot | Salesforce `Account`, `User`, `Contract` | Current ARR is `Account.ACV_Current__c`. Renewal date is the active contract end date. Both are system-of-record fields. Target ARR and Reviewed With come from a human. Health R/A/G is a Claude draft. `atb-tools` computes Next Review and Growth $ Gap. |
+| 2 | Account Strategy | Salesforce for "today", human for the future | Parked. |
+| 3 | Where We Are Today | Salesforce `Asset`, `Contract`, `OpportunityLineItem`, `Case`, notes | Parked. |
+| 4 | MEDDPICC | Transcripts, email, notes | Evidence is a cited quote. Each R/A/G is a Claude draft. |
+| 5 | Stakeholder Map | Salesforce `Contact`, `OpportunityContactRole`, `Task`, `Event`; transcripts and notes | MEDDPICC role and position need approval. |
+| 6 | Org Chart and Coverage | ZoomInfo reporting lines, human | Parked. |
+| 7 | Competition | Notes, Claude drafts | Parked. |
+| 8 | Channel and Partners | Notes | Parked. |
+| 9 | Opportunities | Salesforce `Opportunity`, notes | Parked. |
+| 10 | Risks and Blockers | Transcripts, notes, escalated Salesforce `Case` records | Each risk has a mitigation, an owner, and a date. |
+| 11 | 30/60/90 Actions | Transcripts, email, notes | `derive.action_bucket` buckets actions by due date. |
+| 12 | The Ask | Human, Claude draft | Parked. |
+| App. | Review cadence and trigger events | ARR, notes | An account with ARR of $150k or more is reviewed quarterly. Others are reviewed every six months. A trigger event means an update within 5 business days. |
+
+## Approval
+
+A value is marked ⚠ needs approval when any of these hold:
+
+- Its catalog entry says `needs_approval`.
+- It is Claude's judgement: R/A/G, position, thesis, or the ask.
+- Its confidence is low.
+- Its sources disagree.
+- Its newest evidence is more than 182 days old.
+
+Only a human sets `approved`. The full rule is in [PLAN.md](PLAN.md#the-freshness-rule).
 
 ## Output
-- `data/plans/<account>_<date>.docx`: the template with cells filled; unapproved values
-  visibly marked.
-- `data/plans/<account>_<date>_evidence.md`: per field/row, the source document, date,
-  and verbatim quote.
-- **No account plans exist yet** — every plan starts from scratch; the bot's last approved
-  version (kept in the local DB) is the baseline for later refreshes.
-- **Where finished plans are stored is leadership's call.** The template says Salesforce
-  Account → Notes & Attachments; confirm before the first upload. Uploading stays manual
-  (the C1 tools granted are read-only, and Salesforce write is deprioritized).
+
+Each run writes to `data/plans/<account>/<date>/`:
+
+- `<account>_<date>.docx`: the template with cells filled and unapproved values marked.
+- `evidence.md`: for each field and row, the sources, dates, and verbatim quotes.
+- `sf_drift.md`: fields where newer evidence contradicts Salesforce.
+- `plan.json`: the next run's baseline.
+
+No account plans existed before this bot, so the first plan for each account starts from
+scratch. Uploading to Salesforce stays manual. The C1 tools are read-only.
