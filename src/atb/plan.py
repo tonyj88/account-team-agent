@@ -24,6 +24,7 @@ SourceKind = Literal[
     "baseline",  # last approved plan; as_of = its approval date
     "human",  # a decision recorded by Tony; always wins
     "llm_draft",  # Claude's judgement (R/A/G, position); always needs approval
+    "derived",  # computed by atb-tools from other plan values; ref names the rule
 ]
 
 # Sources whose evidence must carry a verbatim quote from a saved text file.
