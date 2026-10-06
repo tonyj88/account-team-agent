@@ -1,85 +1,92 @@
 # Checkpoint
 
-Last updated: 2026-09-30
+Last updated: 2026-10-06
 
-Short status snapshot. Design lives in [docs/PLAN.md](docs/PLAN.md); session workflow in
-[CLAUDE.md](CLAUDE.md). Update this file at the end of every session that changes what's
-built or what's next — it is the source of truth for "where are we", not chat history.
+This file is the source of truth for what is built and what comes next. Update it at the
+end of every session that changes either. The design is in [docs/PLAN.md](docs/PLAN.md).
 
-## Model guide (Claude Enterprise, updated 2026-09-30)
+## Status
 
-**Start each new session on the model listed for the next milestone.** Don't switch
-models partway through a session: the prompt cache is per model, so the new model
-rereads the whole context uncached. Get savings with Sonnet subagents (fresh, small
-context) and fresh sessions that resume from this file.
+The toolkit and the skill are built. Nothing has run on real data yet.
 
-| Milestone | Start session on | Subagents | Why |
-|---|---|---|---|
-| **R1** Docs/agents/CLAUDE.md update, model pins | **Sonnet 5.5** | none needed | Mechanical edits |
-| **R2** design (plan schema, candidates.json, reconcile/freshness/approval, speaker weighting) | **Opus 5.5** | `atb-architect` | Design errors spread everywhere |
-| **R2** build (validate, derive, reconcile, transcript clean + tests) | **Sonnet 5.5** | implementer → reviewer | Well-specified code |
-| **R3** render (docx skill + field→cell map), evidence, sf_drift, diff | **Sonnet 5.5** | implementer → reviewer | Wiring |
-| **R4** `/account-plan` skill prompts + live Agilent run | **Opus 5.5** | reviewer (Sonnet) | Prompt and extraction quality on messy data |
-| **R5** `/plan-review`, `/plan-due`, scheduled task | **Sonnet 5.5** | implementer → reviewer | Wiring |
-| **R6** SharePoint publish for teammates' Copilot | **Sonnet 5.5** | — | Later |
-| End-of-phase review (after R2–R3, after R4–R5) | **Opus 5.5** | `atb-phase-reviewer` | Cross-task issues |
-
-R1 must update the model IDs in `.claude/agents/*.md` and CLAUDE.md from
-`claude-opus-5`/`claude-sonnet-5` (old gateway) to `claude-opus-5-5`/`claude-sonnet-5-5`.
-First confirm that Sonnet 5.5 is available on the Enterprise plan.
-
-## Handoff
-
-**Direction change (2026-09-30):** Claude-native re-plan adopted. Claude Code (Tony only)
-gathers from C1/Salesforce + M365 + local notes; a small deterministic Python toolkit
-reconciles (newest dated evidence wins; SF drift report), validates, and fills the
-template. Old pipeline frozen at tag `v0-pipeline`. See docs/PLAN.md.
-**Branch:** `master` (re-plan merged). Create a branch per milestone, e.g. `r1/docs-agents`.
-
-**Next tasks**
-1. **R1** — start on **Sonnet 5.5**: update CLAUDE.md + `.claude/agents/*` invariants to the
-   new design; guardrail scope now includes M365 write tools (see docs/R0_DISCOVERY.md).
-2. **R2** — start on **Opus 5.5**, `atb-architect`: design candidates.json / plan.schema.json and
-   the reconcile + approval rules, using R0 findings (SF field history for as-of dates;
-   transcripts for any meeting Tony attended; skip locked ones gracefully). Then `atb-implementer` per task.
-
-- R2 design input: transcript preprocessing + field-driven extraction + per-transcript cache (docs/PLAN.md → Transcript handling).
-- R2 design input: Obsidian = side notes only (no more pasted recaps); reconcile must
-  merge a note and a transcript for the same meeting (account + date) into one source.
-
-**Waiting on Tony**
-- Pick/create the SharePoint (or OneDrive) folder for plans — none exists today (R0).
-- Before R4 live run on Agilent (C1 + M365 reads).
-
-**Last verification**
-- 2026-09-30: R0b done — SuperDuck join via sfdc_id ✅, core.scans ✅, ACV ❌ (NULL for all), health marts miss NULL-ACV accounts; SF ACV_Current__c ✅ (no field history); Confluence account pages ✅ (Rovo costs credits → prefer CQL).
-- 2026-09-30: R0 discovery done (docs/R0_DISCOVERY.md): calendar, email, Teams chat, SharePoint ✅; transcripts ✅ for meetings Tony attended (incl. others' — one series 423-locked at organizer storage); SF field history ✅ via SOQL; OneNote untested.
-
-## Phase status
-
-| # | Deliverable | Status |
+| Part | State | Where |
 |---|---|---|
-| 0–4, A | Old pipeline (ingest, extraction, QA CLI) | ✅ frozen at `v0-pipeline` |
-| B, C, G, H, H-fb, J | Old plan phases | ❌ retired by re-plan |
-| R0 | Connector discovery | ✅ docs/R0_DISCOVERY.md |
-| R0b | Probe SuperDuck + Atlassian | ✅ docs/R0_DISCOVERY.md |
-| R1 | Re-plan docs, agents, CLAUDE.md | 🟡 next: CLAUDE.md + agents |
-| R2 | plan schema + validate + reconcile + derive | ⬜ |
-| R3 | render docx + evidence + sf_drift + diff | ⬜ |
-| R4 | `/account-plan` skill + C1 allowlist hook; Agilent live run | ⬜ |
-| R5 | `/plan-review`, `/plan-due` | ⬜ |
-| R6 | Publish to SharePoint for teammates' Copilot | ⏸ later |
+| Plan formats (`candidates.json`, `plan.json`) | Built | `src/atb/plan.py` |
+| Field catalog loader | Built | `src/atb/catalog.py` |
+| `reconcile`: freshness rule, approvals, `sf_drift.md` | Built, tested | `src/atb/reconcile.py` |
+| `validate`: sources, verbatim quotes, approvals, secrets | Built, tested | `src/atb/validate.py` |
+| `render`: label-located .docx fill, `evidence.md` | Built, tested on a synthetic template | `src/atb/render.py` |
+| `transcript-clean`, `derive`, `diff`, `redact` | Built, tested | `src/atb/` |
+| `/account-plan` skill | Written, not yet run | `.claude/skills/account-plan/SKILL.md` |
+| Write-guard hook for C1 and M365 | Built, tested offline | `.claude/hooks/write_guard.py` |
 
-## Known issues carried forward
-- `Document.occurred_at` is never set → no recency anywhere (Phase B).
-- No way to mark an action item done; unverified whether `(done)` changes answers
-  (Phase B).
-- Contacts duplicate per document; no roles (Phase C → `Stakeholder`).
-- `Meeting` model unused; `resolve/meeting_link.py` not built (Phase I).
-- Loading `config/account_plan_fields.yaml` needs PyYAML, which is not a dependency yet —
-  Phase C adds it (or the architect converts the file to TOML, stdlib `tomllib`).
-- Tests for .docx filling must use a synthetic fixture with the same table layout, never
-  the real (Confidential) template.
-- Embedding cost logged as $0 in IngestLog.
-- Runtime router uses `claude-haiku-4-5` (live-verified through the gateway). If the
-  gateway drops it, set `models.route = "claude-sonnet-5"` in `config.toml`.
+Last verification, 2026-10-06, in a cloud session: 249 tests pass and `ruff check` is
+clean. PyPI was blocked there, so the tests ran against system copies of pydantic,
+PyYAML, and python-docx instead of `uv sync`. An end-to-end run on synthetic data
+(transcript → reconcile → validate → render → diff) produced the expected plan and flags.
+
+## Next steps
+
+Run these on the laptop. They need the connectors, the template, and customer data.
+
+1. **Set up** (Sonnet 5). Run `uv sync --all-extras`, then commit the regenerated
+   `uv.lock`. Run `uv run pytest`.
+2. **Check the hook** (Sonnet 5). Start Claude Code and confirm that `.claude/settings.json`
+   loads the hook. Try one allowed C1 read and one blocked M365 send.
+3. **Render against the real template** (Sonnet 5). Run `render` on a small `plan.json`
+   with the real template. Check the "not placed" list. If labels in the template differ
+   from `config/account_plan_fields.yaml`, fix the labels in the YAML. The 30/60/90 table
+   may have bucket heading rows. If so, `render` needs bucket placement, which isn't
+   built yet.
+4. **Agilent run** (Opus 5). Run `/account-plan Agilent` and compare the result with the
+   hand-made Agilent plan. Find at least one field where Teams or email is newer than
+   Salesforce, and confirm the plan uses it and flags it.
+5. **Second account** (Opus 5). Run the skill on the second account, which already has a
+   hand-made doc built from only the M365 and C1 connectors. Change no prompts between
+   the two runs. Compare the outputs field by field.
+6. **Repeat run.** Run the same account twice with no new evidence. `diff` should show no
+   changes.
+
+## Definition of done
+
+| Check | Pass condition | State |
+|---|---|---|
+| Setup | `uv sync` and `uv run pytest` pass on the laptop | Not run |
+| Freshness rule | Unit tests for newer email, older email, and system-of-record conflict | Pass |
+| Provenance | `validate` reports zero errors on the Agilent run | Not run |
+| Approvals | Every `needs_approval` value shows ⚠ in the .docx | Pass on synthetic template |
+| Agilent | The .docx opens in Word with the layout intact. Tony signs off. | Not run |
+| Second account | Same as Agilent, with no prompt changes | Not run |
+| Safety | The hook blocks a C1 write and an M365 send in a live session | Not run |
+| Repeatability | A second run with no new evidence shows no `diff` | Not run |
+
+Once every check passes, fix bugs before adding anything. A new feature needs a failing
+check to justify it.
+
+## Waiting on Tony
+
+- Run steps 1 to 6 above on the laptop.
+- Pick or create the SharePoint or OneDrive folder for finished plans. This only matters
+  once publishing is back in scope.
+- Confirm whether `claude-sonnet-5-5` and `claude-opus-5-5` are available on the gateway.
+  If they are, update the model IDs in `CLAUDE.md` and `.claude/agents/*.md`.
+
+## Decisions (2026-10-06)
+
+- Current ARR is Salesforce `Account.ACV_Current__c`, treated as a system-of-record field.
+- The old pipeline is deleted. It remains in git history at `0327e44`. The tag
+  `v0-pipeline` exists on `tonyj88/account-team-agent`.
+- The Agilent fill script stays local on the enterprise laptop and is not committed.
+- The second test account is the one with an existing M365 + C1-only doc.
+- Parked until the definition of done passes: SuperDuck health, ZoomInfo, Confluence and
+  Jira, the transcript cache, speaker weighting in code, `/plan-review`, `/plan-due` and a
+  scheduled run, an approval page, SharePoint publishing, and the non-MVP sections
+  (2, 3, 6 to 9, 12).
+
+## Known gaps
+
+- `render` writes 30/60/90 actions in order. It doesn't place them under bucket headings.
+- The hook's C1 `execute` check guesses the key that holds the app tool name. If a live
+  call is denied with "no app tool name", read the real input shape and add its key.
+- A note and a transcript from the same meeting count as two sources. Reconcile doesn't
+  merge them yet.

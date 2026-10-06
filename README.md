@@ -1,71 +1,92 @@
 # Account Team Bot
 
-Fills out leadership's **Account Plan** (`account_plan.docx`) for any account with the
-most accurate, freshest information available. Every value cites its source, and
-anything uncertain is flagged for human approval.
+Fills out leadership's Account Plan (`account_plan.docx`) for one account at a time.
+Every value cites where it came from. Values that need a human decision carry a ⚠ marker.
 
-Tony runs it from **Claude Code** on his laptop. Claude gathers the evidence through
-connectors, and a small deterministic Python toolkit decides which value wins, checks
-the evidence, and fills in the template.
+Tony runs it from Claude Code on his laptop. The `/account-plan` skill gathers evidence
+through the ConductorOne (C1) and Microsoft 365 connectors. A small Python toolkit,
+`atb-tools`, then picks the winning value for each field, checks the evidence, and fills
+the template. The toolkit makes no LLM calls, so the same evidence always produces the
+same plan.
 
 ```
-Salesforce (via ConductorOne) ─┐
-M365: Teams transcripts, email,├─► /account-plan <account> ─► candidates ─► reconcile ─► validate ─► account_plan.docx
-      chats, calendar, SharePoint│      (Claude skill)          (dated,     (newest       (quotes      + evidence.md
-SuperDuck scans · Confluence   │                                quoted)     evidence     verbatim,    + sf_drift.md
-Obsidian side notes ───────────┘                                            wins)        approvals)
+Salesforce (via C1) ──┐
+Teams transcripts ────┤                    atb-tools
+Outlook email, chat ──┼─► /account-plan ─► reconcile ─► validate ─► render ─► <account>_<date>.docx
+SharePoint files ─────┤   candidates.json  plan.json                         evidence.md
+Local side notes ─────┘                    sf_drift.md
 ```
 
-**Key rules**
-- **Newest dated evidence wins.** Salesforce contacts and notes go stale, so a newer
-  Teams transcript or email overrides them. That value is marked ⚠ needs approval and
-  listed in `sf_drift.md`, so Salesforce can be updated by hand.
-- **System-of-record fields stay with Salesforce:** ARR (`Account.ACV_Current__c`),
-  contract dates, and products purchased. A conversation can only flag a change.
-- **Read-only:** the bot never writes to Salesforce, and never sends email or Teams
-  messages. A SharePoint upload always asks first.
-- **Provenance:** every value cites a Salesforce record and field, or a document plus a
-  verbatim quote and date.
+## How a value is chosen
 
-## Where to start a session
-1. Read **[CHECKPOINT.md](CHECKPOINT.md)**: the Handoff section says what's next and
-   which model to start on.
-2. Design: **[docs/PLAN.md](docs/PLAN.md)**. Connector findings:
-   **[docs/R0_DISCOVERY.md](docs/R0_DISCOVERY.md)**.
-3. How sessions work: **[CLAUDE.md](CLAUDE.md)**.
+- **The newest dated evidence wins.** Salesforce contacts and notes go stale, so a newer
+  Teams transcript or email replaces them. The plan marks that value ⚠ and lists it in
+  `sf_drift.md`, so you can correct Salesforce by hand.
+- **Salesforce keeps the system-of-record fields.** These are Current ARR
+  (`Account.ACV_Current__c`) and renewal dates. A conversation can flag a change to them
+  but never replaces them.
+- **A human decision beats everything.** Only you can approve a value. Claude's
+  judgements, such as an R/A/G status, always need approval.
+- **The bot only reads.** It never writes to Salesforce and never sends email or Teams
+  messages. The hook in `.claude/hooks/write_guard.py` enforces this.
 
-## Roadmap
-Temporary section, to be removed when the project is done. ✅ done · 🟡 in progress · ⬜ not started · ⏸ later
+The full rules are in [docs/PLAN.md](docs/PLAN.md).
 
-| # | Milestone | Start session on | Status |
-|---|---|---|---|
-| R0 | Connector discovery: M365, Salesforce field history, transcripts | Opus 5.5 | ✅ |
-| R0b | SuperDuck + Atlassian discovery; ARR source = Salesforce ACV | Opus 5.5 | ✅ |
-| R1 | Update CLAUDE.md and agent definitions to the new design; model pins → 5.5; guardrail scope covers M365 writes | **Sonnet 5.5** | ⬜ **next** |
-| R2 | Plan schema + candidates.json; `reconcile` (freshness rule), `validate`, `derive`, `transcript clean` + tests | **Opus 5.5** to design → **Sonnet 5.5** to build | ⬜ |
-| R3 | `render` (docx skill + field→cell map), evidence file, `sf_drift.md`, `diff` | **Sonnet 5.5** | ⬜ |
-| R4 | `/account-plan` skill + C1/M365 write-guard hook; live Agilent run | **Opus 5.5** | ⬜ |
-| R5 | `/plan-review`, `/plan-due`, weekly scheduled task | **Sonnet 5.5** | ⬜ |
-| R6 | Publish plans and briefs to SharePoint for teammates' M365 Copilot | **Sonnet 5.5** | ⏸ |
+## Set up
 
-Rule of thumb: Opus 5.5 for design and prompt quality, Sonnet 5.5 for building. Don't
-switch models partway through a session (it breaks the prompt cache); start a fresh
-session from the checkpoint instead.
+You need Python 3.13 and [uv](https://docs.astral.sh/uv/).
 
-## Open items for Tony
-- Pick or create the SharePoint/OneDrive folder for finished plans.
-- OK to run the live Agilent extraction in R4.
-
-## Legacy
-The earlier Python pipeline (ingest → LLM extraction → SQLite → Q&A CLI) is frozen at
-the git tag `v0-pipeline`. Some of its pieces, such as `src/atb/redact.py`, will be
-reused by the new toolkit.
-
-## Development
 ```bash
 uv sync --all-extras
 uv run pytest
 uv run ruff check
 ```
-Never commit `data/`, `*.sqlite*`, `config.toml`, or the Account Plan template, which
-is Confidential.
+
+To fill a real plan, you also need:
+
+- The C1 and Microsoft 365 connectors, signed in from Claude Code.
+- The blank template at `data/templates/account_plan.docx`. The template is Confidential,
+  so it stays out of git.
+
+## Run it
+
+In Claude Code, from the repository root:
+
+```
+/account-plan <account name>
+```
+
+The skill writes everything to `data/plans/<account>/<date>/`:
+
+| File | Contents |
+|---|---|
+| `<account>_<date>.docx` | The filled template. |
+| `evidence.md` | Each value with its sources, quotes, and older values. |
+| `sf_drift.md` | Fields where newer evidence contradicts Salesforce. |
+| `plan.json` | The reconciled plan. The next run uses it as the baseline. |
+| `candidates.json`, `sources/` | The raw evidence that the plan was built from. |
+
+The steps the skill follows are in
+[.claude/skills/account-plan/SKILL.md](.claude/skills/account-plan/SKILL.md). You can also
+run each `atb-tools` step yourself. `uv run atb-tools --help` lists them.
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `src/atb/` | The `atb-tools` toolkit: `reconcile`, `validate`, `render`, `diff`, `transcript`, `derive`, `redact`. |
+| `src/atb/plan.py` | The `candidates.json` and `plan.json` formats. |
+| `config/account_plan_fields.yaml` | Every field in the template, with its source and approval rule. |
+| `.claude/skills/account-plan/` | The `/account-plan` skill. |
+| `.claude/hooks/write_guard.py` | Blocks connector writes and sends. |
+| `docs/` | Design, field-to-source mapping, and connector findings. |
+
+Status and next steps are in [CHECKPOINT.md](CHECKPOINT.md).
+
+## Never commit
+
+`data/`, `config.toml`, or the Account Plan template. They hold customer data,
+credentials, or Confidential material. `.gitignore` covers all three.
+
+The earlier pipeline (ingest, LLM extraction, SQLite, Q&A) was removed. It is still in the
+git history at commit `0327e44`.
