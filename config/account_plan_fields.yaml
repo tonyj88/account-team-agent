@@ -21,6 +21,7 @@
 #               auto            accepted unless low-confidence / conflicting / stale
 #               needs_approval  always needs a human to approve
 #   alt_sources  other sources that can also supply the field
+#   system_of_record  true = only Salesforce sets the value; other sources can only flag a change
 #   mvp       true = filled in the first usable version (Tony, 2026-09-28)
 #
 # Rows (`kind: rows`) are repeating tables; `columns` follow the same fields.
@@ -52,8 +53,8 @@ sections:
       - {key: snapshot.segment_geo, label: "Segment / Geo", source: crm, alt_sources: [zoominfo], approval: auto}
       - {key: snapshot.industry, label: "Industry", source: crm, alt_sources: [zoominfo], approval: auto}
       - {key: snapshot.fiscal_year, label: "Fiscal Year", source: crm, approval: auto}
-      - {key: snapshot.current_arr, label: "Current ARR", source: derived, approval: needs_approval, derived_from: [crm.contract.total_value, crm.contract.term_months], note: "Salesforce has no ARR field; Amount is TCV. Annualize active contract(s) in code; needs approval until leadership confirms the ARR definition."}
-      - {key: snapshot.renewal_dates, label: "Renewal Date(s)", source: crm, approval: auto, note: "Active contract end date; cross-check open renewal opportunity; mismatch => needs_approval."}
+      - {key: snapshot.current_arr, label: "Current ARR", source: crm, approval: auto, system_of_record: true, note: "Salesforce Account.ACV_Current__c (Tony, 2026-10-06). No field history; as-of date is the Account LastModifiedDate. A conversation can only flag a change."}
+      - {key: snapshot.renewal_dates, label: "Renewal Date(s)", source: crm, approval: auto, system_of_record: true, note: "Active contract end date; cross-check open renewal opportunity; mismatch => needs_approval."}
       - {key: snapshot.health_rag, label: "Health (R/A/G)", source: llm_draft, approval: needs_approval}
       - {key: snapshot.target_arr_fy, label: "Target ARR (FY)", source: human, approval: auto}
       - {key: snapshot.growth_gap_usd, label: "Growth $ Gap", source: derived, approval: auto, derived_from: [snapshot.target_arr_fy, snapshot.current_arr]}
